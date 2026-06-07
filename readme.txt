@@ -1,85 +1,144 @@
-# Super Star Chore Chart
+# Super Star Chore Chart  
+### A WordPress Plugin for Family Chore Management
 
-**Contributors:** quentinrussell  
-**Tags:** chore chart, kids, family, tasks, parenting  
-**Requires at least:** 5.8  
-**Tested up to:** 6.5  
-**Stable tag:** 2.0.0  
-**License:** GPLv2 or later  
-**License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
-
-A family-based, server-synced interactive chore chart for kids with multi-device real-time updates.
+Super Star Chore Chart is a family‑friendly, server‑synced chore management system built as a WordPress plugin. It helps families organize daily responsibilities, track paid and unpaid tasks, and keep everyone in sync across multiple devices — all inside your WordPress site.
 
 ---
 
-## Description
+## ✨ Features
 
-Super Star Chore Chart v2.0 lets families manage weekly chores together from any device.
+### 👨‍👩‍👧 Family System
+- Each WordPress user can create a **family** with a shared name and password  
+- Other family members join using the family credentials  
+- All members see and update the **same chore chart**  
+- Changes sync automatically via server‑side polling (default: 15 seconds)
 
-### Family System
-- Logged-in WordPress users create a family with a name and password  
-- Other family members join using the family name + password  
-- All members share the same chart — changes sync automatically via server-side polling  
+### 🧒 Per‑Kid Chore Tabs
+- Add, rename, or remove kids  
+- Each kid gets their own chore list  
+- Daily checkboxes (Mon–Sun)  
+- Per‑task totals and weekly earnings summary  
+- Clean **black‑and‑white Print Mode** for easy home printing
 
-### Chore Chart Features
-- Per-kid tabs — add, rename, or remove kids  
-- Paid and unpaid task categories  
-- Daily checkboxes (Mon–Sun) with per-task totals  
-- Weekly earnings summary per kid  
-- Edit Mode — rename tasks, adjust pay rates, toggle paid/unpaid  
-- Default Templates — save a master task list to reuse each week  
-- Weekly Archives — snapshot completed weeks for review  
-- Print Mode — clean black-and-white printout for the active kid  
+### 🧹 Chore Categories
+Organized into intuitive groups:
+- Personal Care & Gear  
+- Shared Spaces & Meals  
+- Kitchen Crew  
+- Bathroom Patrol  
+- General Helpers  
+- Brain Gigs  
+- Community  
 
-### Multi-Device Sync
-- Server-side data storage in WordPress database  
-- Configurable polling interval (default 15 seconds)  
-- Any family member's changes are visible to all others within seconds  
+Supports:
+- **Unpaid Team Duties**  
+- **Paid Gigs** with customizable pay amounts  
 
----
+### 🛠️ Edit Mode
+- Rename tasks  
+- Adjust pay rates  
+- Toggle paid/unpaid  
+- Reorder or remove tasks  
 
-## Installation
+### 📋 Templates & Weekly Archives
+- Save a **Default Template** to quickly reset each week  
+- Automatically archive completed weeks  
+- Review past performance and earnings  
 
-1. Upload `super-star-chore-chart.zip` via **Plugins → Add New → Upload Plugin**  
-2. Click **Install Now** then **Activate**  
-3. A **Chore Chart** page is automatically created at `/chore-chart/`  
-4. Navigate to **Settings → Chore Chart** to configure options  
-5. Use the shortcode `[chore_chart]` on any page or post  
-
----
-
-## Frequently Asked Questions
-
-### Do users need a WordPress account?
-Yes. Each family member must be registered and logged in to access the chart.
-
-### Can a user be in more than one family?
-No — each user belongs to one family at a time. They can leave and join another.
-
-### How do I increase the max number of family members?
-Go to **Settings → Chore Chart** and raise the "Max members per family" value.
-
-### Is the chart data secure?
-Yes. All AJAX requests use WordPress nonce verification. Family passwords are hashed using `wp_hash_password()`.
+### 🔒 Secure & Reliable
+- Server‑side storage in custom WordPress database tables  
+- All AJAX requests protected with WordPress nonces  
+- Family passwords hashed using `wp_hash_password()`  
+- Works with any WordPress theme  
 
 ---
 
-## Changelog
+## 📦 Installation
 
-### 2.0.0
-- Complete rewrite with family-based multi-user system  
-- Server-side data storage in custom database tables  
-- Real-time polling for multi-device sync  
-- AJAX-based save for all chart mutations  
-- Family create/join/leave flow  
+1. Download the plugin ZIP from the **Releases** page.  
+2. In WordPress, go to **Plugins → Add New → Upload Plugin**.  
+3. Upload `super-star-chore-chart.zip` and click **Install Now**.  
+4. Activate the plugin.  
+5. A **Chore Chart** page is automatically created at:  
 
-### 1.0.0
-- Initial release — single-user, localStorage-based chart  
-- Multi-kid tabs, paid/unpaid tasks, archives, defaults, print  
+/chore-chart/
+
+6. Visit **Settings → Chore Chart** to configure options.  
+7. Use the shortcode anywhere:  
+
+[chore_chart]
+
 
 ---
 
-## Upgrade Notice
+## 🧰 How to Use
 
-### 2.0.0
-Major update. Requires user accounts. Data from v1 localStorage is not migrated automatically.
+### 1. Create or Join a Family
+- Logged‑in users create a family name + password  
+- Other users join using the same credentials  
+
+### 2. Add Kids
+- Each kid gets a tab  
+- Customize names and order  
+
+### 3. Customize Tasks
+- Add new tasks  
+- Mark tasks as paid or unpaid  
+- Set pay amounts  
+- Organize tasks by category  
+
+### 4. Track Progress
+- Kids check off tasks daily  
+- Paid tasks automatically calculate totals  
+- Weekly earnings summary updates in real time  
+
+### 5. Print or Archive
+- Use **Print Mode** for a clean, black‑and‑white printable chart  
+- Weekly Archives store past weeks for review  
+
+---
+
+## 🗂️ Folder Structure
+
+
+super-star-chore-chart/ │ ├── super-star-chore-chart.php ├── readme.txt ├── assets/ ├── includes/ └── templates/
+
+
+---
+
+## 🧪 Development
+
+Clone the repository:
+
+```bash
+git clone https://github.com/qrussell/super-star-chore-chart.git
+
+Install dependencies (if applicable):
+
+composer install
+npm install
+
+Build assets:
+
+npm run build
+
+🤝 Contributing
+
+Pull requests are welcome.To contribute:
+
+Fork the repository
+
+Create a feature branch
+
+Commit your changes
+
+Open a pull request
+
+📝 License
+
+GPLv2 or laterSee LICENSE for full details.
+
+❤️ Credits
+
+Created by Quentin to help families build responsibility, independence, and teamwork through a fun, structured chore system.
+
