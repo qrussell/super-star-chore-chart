@@ -1,0 +1,486 @@
+/* Super Star Chore Chart – Stylesheet v2.0.0
+   Black-and-white base, print-ready, family management UI
+*/
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+#sscc-app *, #sscc-app *::before, #sscc-app *::after { box-sizing: border-box; }
+#sscc-app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
+  color: #111;
+  background: #fff;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ── Loading / Error ──────────────────────────────────────────────────────── */
+.sscc-loading, .sscc-err, .sscc-no-kids {
+  text-align: center;
+  padding: 60px 20px;
+  color: #555;
+  font-size: 16px;
+}
+.sscc-spinner { display: inline-block; animation: sscc-spin 1.2s linear infinite; }
+@keyframes sscc-spin { to { transform: rotate(360deg); } }
+
+/* ── Login / Family Gate ─────────────────────────────────────────────────── */
+.sscc-gate {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 300px;
+  padding: 32px 16px;
+}
+.sscc-gate-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 40px 36px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+}
+.sscc-gate-icon { font-size: 48px; margin-bottom: 12px; }
+.sscc-gate-card h2 { font-size: 22px; margin-bottom: 8px; }
+.sscc-gate-card p  { color: #555; margin-bottom: 20px; line-height: 1.5; }
+.sscc-gate-card label {
+  display: block;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #333;
+}
+.sscc-gate-card label input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+.sscc-gate-card label input:focus { outline: 2px solid #111; border-color: transparent; }
+.sscc-gate-or { color: #999; margin: 12px 0; font-size: 13px; }
+
+/* ── Tabs (Family Gate) ──────────────────────────────────────────────────── */
+.sscc-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #111; }
+.sscc-tab {
+  flex: 1;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: -2px;
+}
+.sscc-tab.active { border-bottom-color: #111; color: #111; }
+.sscc-tab-panel { text-align: left; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.sscc-btn {
+  display: inline-block;
+  background: #111;
+  color: #fff;
+  padding: 10px 24px;
+  border: 2px solid #111;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, color .15s;
+  width: 100%;
+  margin-top: 8px;
+}
+.sscc-btn:hover { background: #333; }
+.sscc-btn-outline {
+  background: #fff;
+  color: #111;
+}
+.sscc-btn-outline:hover { background: #f0f0f0; }
+.sscc-btn-sm {
+  padding: 6px 12px;
+  background: #fff;
+  color: #111;
+  border: 1.5px solid #999;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.sscc-btn-sm:hover, .sscc-btn-sm.active { border-color: #111; background: #111; color: #fff; }
+.sscc-link-sm {
+  font-size: 12px;
+  color: #666;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 12px;
+}
+.sscc-link-sm:hover { color: #111; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.sscc-header { border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 12px; }
+.sscc-header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.sscc-header-top h1 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -.3px; }
+.sscc-family-badge {
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+.sscc-header-meta { font-size: 12px; color: #555; margin-top: 6px; }
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.sscc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sscc-edit-banner {
+  background: #fef9c3;
+  border: 1px solid #ca8a04;
+  color: #713f12;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+/* ── Messages ────────────────────────────────────────────────────────────── */
+.sscc-msg { min-height: 20px; font-size: 13px; font-weight: 600; margin: 6px 0; }
+.sscc-msg-ok  { color: #166534; }
+.sscc-msg-err { color: #991b1b; }
+
+/* ── Kid Tabs ────────────────────────────────────────────────────────────── */
+.sscc-kid-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 4px;
+}
+.sscc-kid-tab {
+  padding: 6px 14px;
+  background: #fff;
+  border: 1.5px solid #ccc;
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  position: relative;
+}
+.sscc-kid-tab.active { border-color: #111; color: #111; background: #f9f9f9; }
+.sscc-add-kid { border-style: dashed; color: #666; }
+.sscc-rm-kid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #ddd;
+  font-size: 10px;
+  cursor: pointer;
+  vertical-align: middle;
+  line-height: 1;
+}
+.sscc-rm-kid:hover { background: #111; color: #fff; }
+
+/* ── Edit Kid Name ───────────────────────────────────────────────────────── */
+.sscc-edit-kid-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.sscc-kid-name-input {
+  padding: 5px 8px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  width: 180px;
+}
+
+/* ── Chart Table ─────────────────────────────────────────────────────────── */
+.sscc-chart-wrap { overflow-x: auto; }
+.sscc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+.sscc-table th {
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 4px;
+  border: 1px solid #111;
+  white-space: nowrap;
+}
+.sscc-th-task { text-align: left; padding-left: 8px; min-width: 180px; }
+.sscc-cat-row td {
+  background: #f3f3f3;
+  border: 1px solid #ccc;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sscc-cat-name-input {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed #999;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 3px;
+}
+.sscc-paid-badge   { font-size: 11px; background: #d1fae5; color: #065f46; border-radius: 3px; padding: 1px 5px; }
+.sscc-unpaid-badge { font-size: 11px; background: #e5e7eb; color: #374151; border-radius: 3px; padding: 1px 5px; }
+
+.sscc-task-row td {
+  border: 1px solid #ddd;
+  padding: 4px 4px;
+  vertical-align: middle;
+}
+.sscc-task-name { text-align: left; padding-left: 8px !important; }
+.sscc-paid-dot  { color: #059669; font-weight: 800; margin-right: 3px; }
+.sscc-flat, .sscc-rate { font-size: 11px; color: #555; font-style: italic; }
+
+.sscc-task-row:hover td { background: #fafafa; }
+.sscc-task-row.paid td  { background: #f0fdf4; }
+.sscc-task-row.paid:hover td { background: #dcfce7; }
+
+.sscc-check-cell { text-align: center; padding: 2px !important; }
+.sscc-check {
+  width: 28px; height: 28px;
+  border: 2px solid #bbb;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .1s, background .1s;
+}
+.sscc-check.checked { background: #111; border-color: #111; color: #fff; }
+.sscc-check:disabled { cursor: default; opacity: .5; }
+.sscc-total { text-align: center; font-weight: 700; font-size: 13px; white-space: nowrap; }
+
+/* ── Edit-mode task inputs ───────────────────────────────────────────────── */
+.sscc-rm-task {
+  color: #999;
+  cursor: pointer;
+  margin-right: 4px;
+  font-size: 12px;
+}
+.sscc-rm-task:hover { color: #dc2626; }
+.sscc-task-input {
+  width: 160px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+.sscc-task-amount { border: 1px solid #ddd; border-radius: 3px; padding: 2px 4px; font-size: 12px; }
+.sscc-task-unit   { border: 1px solid #ddd; border-radius: 3px; font-size: 12px; }
+.sscc-paid-toggle { font-size: 12px; display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; }
+.sscc-add-task, #btn-add-cat {
+  font-size: 12px;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 2px;
+}
+.sscc-add-task-row td, .sscc-add-cat-row td {
+  border: 1px solid #eee;
+  padding: 4px 8px;
+  background: #fafafa;
+}
+
+/* ── Earnings Bar ────────────────────────────────────────────────────────── */
+.sscc-earnings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2px solid #111;
+  padding: 10px 4px;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.sscc-earnings-total {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.sscc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px;
+  overflow-y: auto;
+}
+.sscc-modal {
+  background: #fff;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 620px;
+  padding: 28px 28px 20px;
+  position: relative;
+}
+.sscc-modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.sscc-modal-hdr h2 { font-size: 18px; font-weight: 700; margin: 0; }
+.sscc-modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #555;
+  line-height: 1;
+}
+.sscc-modal-sub { color: #666; font-size: 13px; margin-bottom: 16px; }
+.sscc-modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+.sscc-modal-footer .sscc-btn { width: auto; }
+
+/* ── Defaults Editor ─────────────────────────────────────────────────────── */
+.sscc-def-cat {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.sscc-def-cat-hdr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.sscc-def-catname {
+  flex: 1;
+  min-width: 120px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.sscc-rm-defcat {
+  font-size: 11px;
+  color: #dc2626;
+  background: none;
+  border: 1px solid #dc2626;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.sscc-def-task {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 12px;
+}
+.sscc-def-taskname {
+  flex: 1;
+  min-width: 120px;
+  padding: 3px 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+.sscc-rm-deftask {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  font-size: 12px;
+}
+.sscc-rm-deftask:hover { color: #dc2626; }
+.sscc-def-amount { width: 55px; padding: 3px 5px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; }
+.sscc-def-unit   { padding: 3px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; }
+.sscc-add-deftask {
+  font-size: 12px;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 6px;
+}
+#btn-add-defcat {
+  font-size: 13px;
+  color: #2563eb;
+  background: none;
+  border: 1px dashed #2563eb;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  #sscc-app { padding: 10px 8px; }
+  .sscc-header-top h1 { font-size: 16px; }
+  .sscc-table { font-size: 11px; }
+  .sscc-check { width: 24px; height: 24px; font-size: 13px; }
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+@media print {
+  body * { visibility: hidden !important; }
+  #sscc-app, #sscc-app * { visibility: visible !important; }
+  #sscc-app {
+    position: absolute;
+    inset: 0;
+    max-width: 100%;
+    padding: 10px;
+    font-size: 11px;
+  }
+  .sscc-toolbar, .sscc-kid-tabs, .sscc-header-meta .sscc-link-sm,
+  .sscc-family-badge, .sscc-edit-banner, .sscc-msg,
+  .sscc-add-task-row, .sscc-add-cat-row,
+  .sscc-btn, .sscc-btn-sm, .sscc-rm-kid, .sscc-modal-overlay { display: none !important; }
+  .sscc-check { border: 1.5px solid #555 !important; background: transparent !important; }
+  .sscc-check.checked::after { content: '✓'; color: #000; font-size: 14px; }
+  .sscc-check.checked { color: #000 !important; background: transparent !important; }
+  .sscc-table { min-width: unset; page-break-inside: avoid; }
+  .sscc-earnings { border-top: 2px solid #000; }
+  @page { size: letter portrait; margin: .5in; }
+}
