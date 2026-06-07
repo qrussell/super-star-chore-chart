@@ -1,4 +1,4 @@
-# Super Star Chore Chart
+#Super Star Chore Chart
 
 **Contributors:** quentinrussell  
 **Tags:** chore chart, kids, family, tasks, parenting  
