@@ -3,7 +3,7 @@
  * Plugin Name: Super Star Chore Chart
  * Plugin URI:  https://yourwebsite.com/chore-chart
  * Description: Family chore chart with user accounts, family groups, shared real-time charts, weekly archives, and printable output. Use [chore_chart] shortcode.
- * Version:     2.0.1
+ * Version:     2.1.0
  * Author:      Quentin Russell
  * License:     GPL v2 or later
  * Text Domain: super-star-chore-chart
@@ -11,13 +11,14 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'SSCC_VERSION',    '2.0.1' );
+define( 'SSCC_VERSION',    '2.1.0' );
 define( 'SSCC_DIR',        plugin_dir_path( __FILE__ ) );
 define( 'SSCC_URL',        plugin_dir_url( __FILE__ ) );
 define( 'SSCC_FILE',       __FILE__ );
 
 require_once SSCC_DIR . 'includes/db.php';
 require_once SSCC_DIR . 'includes/ajax.php';
+require_once SSCC_DIR . 'includes/login.php';
 require_once SSCC_DIR . 'includes/shortcode.php';
 require_once SSCC_DIR . 'admin/settings.php';
 
@@ -25,6 +26,8 @@ require_once SSCC_DIR . 'admin/settings.php';
 register_activation_hook( __FILE__, 'sscc_activate' );
 function sscc_activate() {
     sscc_create_tables();
+    sscc_create_magic_token_table();
+
     if ( ! get_option( 'sscc_settings' ) ) {
         add_option( 'sscc_settings', [
             'iframe_height'      => 1000,
@@ -50,12 +53,12 @@ function sscc_activate() {
 register_deactivation_hook( __FILE__, function() { flush_rewrite_rules(); } );
 
 // ── Auto-upgrade tables on plugin update ──────────────────────────────────────
-// Runs on every page load (plugins_loaded) but only calls dbDelta when the
-// stored DB version doesn't match the current plugin version — cheap check.
 add_action( 'plugins_loaded', 'sscc_maybe_upgrade_db' );
 function sscc_maybe_upgrade_db() {
     if ( get_option( 'sscc_db_version' ) !== SSCC_VERSION ) {
-        sscc_create_tables(); // also calls update_option( 'sscc_db_version', ... )
+        sscc_create_tables();
+        sscc_create_magic_token_table();
+        update_option( 'sscc_db_version', SSCC_VERSION );
     }
 }
 
