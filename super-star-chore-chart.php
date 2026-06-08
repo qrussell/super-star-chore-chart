@@ -49,6 +49,7 @@ function sscc_enqueue_assets() {
         'family'       => $family_data,
         'pollInterval' => intval( $opts['poll_interval'] ?? 15 ) * 1000,
         'version'      => SSCC_VERSION,
+        'pluginUrl'    => SSCC_URL, // <--- THIS RESTORES THE PRINT STYLES
     ] );
 }
 
