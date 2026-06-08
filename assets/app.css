@@ -1,4 +1,4 @@
-/* Super Star Chore Chart – Stylesheet v2.0.0
+/* Super Star Chore Chart – Stylesheet v2.1.0
    Black-and-white base, print-ready, family management UI
 */
 
@@ -13,6 +13,9 @@
   margin: 0 auto;
   padding: 16px;
 }
+
+/* Print Specific Utility */
+.sscc-print-only { display: none !important; }
 
 /* ── Loading / Error ──────────────────────────────────────────────────────── */
 .sscc-loading, .sscc-err, .sscc-no-kids {
@@ -227,14 +230,15 @@
   font-size: 13px;
   min-width: 600px;
 }
+/* Force stark white text on the dark background for screens */
 .sscc-table th {
-  background: #111;
-  color: #fff;
+  background: #111 !important;
+  color: #ffffff !important; 
   font-size: 12px;
   font-weight: 700;
   text-align: center;
   padding: 6px 4px;
-  border: 1px solid #111;
+  border: 1px solid #111 !important;
   white-space: nowrap;
 }
 .sscc-th-task { text-align: left; padding-left: 8px; min-width: 180px; }
@@ -323,9 +327,6 @@
 
 /* ── Earnings Bar ────────────────────────────────────────────────────────── */
 .sscc-earnings {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   border-top: 2px solid #111;
   padding: 10px 4px;
   margin-top: 4px;
@@ -458,29 +459,180 @@
 @media (max-width: 600px) {
   #sscc-app { padding: 10px 8px; }
   .sscc-header-top h1 { font-size: 16px; }
-  .sscc-table { font-size: 11px; }
-  .sscc-check { width: 24px; height: 24px; font-size: 13px; }
+  
+  /* 1. Hide the traditional horizontal table header */
+  .sscc-table thead { display: none; }
+  
+  /* 2. Convert table elements into flexible blocks */
+  .sscc-table, .sscc-table tbody, .sscc-cat-row td, .sscc-task-row td, .sscc-check-cell {
+    display: block;
+    width: 100%;
+  }
+  
+  /* 3. Transform each chore row into a "Mobile Card" */
+  .sscc-task-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 12px 10px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+  }
+  
+  /* 4. Task Name header stretches across the top of the card */
+  .sscc-task-row td.sscc-task-name {
+    border: none;
+    border-bottom: 1px solid #eee;
+    padding: 0 0 10px 0 !important;
+    margin-bottom: 10px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* Make inputs full-width in edit mode to prevent cramping */
+  .sscc-task-name input[type="text"] { 
+    width: 100%; 
+    margin: 6px 0; 
+  }
+  
+  /* 5. Distribute the 7 day checkboxes evenly in a row */
+  .sscc-task-row td.sscc-check-cell {
+    width: 14%; /* Roughly 1/7th of the width */
+    border: none;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  /* 6. Dynamic CSS labels! Pull the "mon", "tue" data to label the buttons */
+  .sscc-check {
+    position: relative;
+    margin-top: 14px;
+    width: 32px !important; 
+    height: 32px !important; /* Larger tap targets for thumbs */
+  }
+  .sscc-check::before {
+    content: attr(data-day);
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  
+  /* 7. Format the Total at the bottom right of the card */
+  .sscc-task-row td.sscc-total {
+    border: none;
+    border-top: 1px dashed #eee;
+    margin-top: 12px;
+    padding-top: 10px;
+    text-align: right;
+    font-size: 15px;
+  }
+
+  /* Clean up the "Add Task" buttons for mobile */
+  .sscc-add-task-row td, .sscc-add-cat-row td { 
+    border: 1px dashed #ccc; 
+    border-radius: 6px; 
+    text-align: center; 
+    padding: 12px !important;
+  }
+}
 }
 
 /* ── Print ───────────────────────────────────────────────────────────────── */
 @media print {
-  body * { visibility: hidden !important; }
-  #sscc-app, #sscc-app * { visibility: visible !important; }
+  /* No more WordPress overrides needed! We just style the app layout */
   #sscc-app {
-    position: absolute;
-    inset: 0;
-    max-width: 100%;
-    padding: 10px;
-    font-size: 11px;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12px;
+    color: #000;
   }
-  .sscc-toolbar, .sscc-kid-tabs, .sscc-header-meta .sscc-link-sm,
-  .sscc-family-badge, .sscc-edit-banner, .sscc-msg,
+
+  /* Hide interactive web elements */
+  .sscc-toolbar, .sscc-kid-tabs, .sscc-header,
+  .sscc-edit-banner, .sscc-msg,
   .sscc-add-task-row, .sscc-add-cat-row,
-  .sscc-btn, .sscc-btn-sm, .sscc-rm-kid, .sscc-modal-overlay { display: none !important; }
-  .sscc-check { border: 1.5px solid #555 !important; background: transparent !important; }
-  .sscc-check.checked::after { content: '✓'; color: #000; font-size: 14px; }
-  .sscc-check.checked { color: #000 !important; background: transparent !important; }
-  .sscc-table { min-width: unset; page-break-inside: avoid; }
-  .sscc-earnings { border-top: 2px solid #000; }
-  @page { size: letter portrait; margin: .5in; }
+  .sscc-btn, .sscc-btn-sm, .sscc-rm-kid, .sscc-modal-overlay,
+  .sscc-no-print {
+    display: none !important;
+  }
+  
+  /* Reveal the print-specific headers */
+  .sscc-print-only { display: block !important; }
+  .sscc-print-header { margin-bottom: 15px; }
+  
+  /* Structure the table exactly like the PDF */
+  .sscc-table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+  .sscc-table tr { page-break-inside: avoid; page-break-after: auto; }
+  .sscc-table th, .sscc-table td {
+    border: 1px solid #000 !important;
+    padding: 6px 8px !important;
+    color: #000 !important;
+  }
+  
+  /* Force Light Grey Backgrounds & Pure Black Text in Print Mode */
+  .sscc-table th { 
+      background: #f4f4f4 !important; 
+      color: #000000 !important;
+      -webkit-print-color-adjust: exact !important; 
+      print-color-adjust: exact !important; 
+  }
+  .sscc-cat-row td {
+    background: #eaeaea !important; 
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-size: 14px !important;
+    text-transform: uppercase;
+  }
+  .sscc-task-name { padding-left: 10px !important; }
+  
+  /* Fix Checkboxes so they are visible and EMPTY for writing */
+  .sscc-check-cell {
+      text-align: center;
+      vertical-align: middle;
+  }
+  .sscc-check {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    border: 2px solid #000 !important;
+    border-radius: 0 !important; 
+    background: #fff !important;
+    margin: 0 auto !important;
+    display: block !important;
+    
+    /* Force browsers to print the box borders */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    
+    /* Hide the digital checkmarks so the box is empty for a pen */
+    color: transparent !important;
+  }
+  
+  /* Ensure checked items remain empty on paper too */
+  .sscc-check.checked { background: #fff !important; border-color: #000 !important; }
+  .sscc-check.checked::after { display: none !important; content: none !important; }
+  
+  .sscc-earnings { 
+      border-top: 2px solid #000; 
+      font-size: 16px !important; 
+      margin-top: 15px; 
+      padding-top: 10px; 
+  }
+  
+  /* Force Portrait Orientation */
+  @page { size: letter portrait; margin: 0.5in; }
 }

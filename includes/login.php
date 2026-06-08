@@ -2,125 +2,88 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 /**
- * Create magic token table
+ * Handle Custom Email Registration
+ */
+function sscc_user_register() {
+    global $wpdb;
+    $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+    $pass  = wp_unslash( $_POST['password'] ?? '' );
+    
+    if ( ! is_email( $email ) || strlen( $pass ) < 6 ) {
+        wp_send_json_error( [ 'message' => 'Please provide a valid email and a password of at least 6 characters.' ] );
+    }
+    
+    $exists = $wpdb->get_var( $wpdb->prepare("SELECT id FROM {$wpdb->prefix}sscc_users WHERE email = %s", $email) );
+    if ( $exists ) {
+        wp_send_json_error( [ 'message' => 'Email already registered. Please log in.' ] );
+    }
+    
+    $wpdb->insert( "{$wpdb->prefix}sscc_users", [
+        'email'     => $email,
+        'pass_hash' => wp_hash_password( $pass ),
+    ], [ '%s', '%s' ] );
+    
+    $uid = $wpdb->insert_id;
+    
+    // Issue Custom User Cookie
+    $hash = md5($uid . $email . NONCE_SALT);
+    // In both sscc_user_register() and sscc_user_login() functions:
+	setcookie(
+		'sscc_user_auth', 
+		base64_encode($uid . '|' . $hash), 
+		time() + (30 * DAY_IN_SECONDS), 
+		COOKIEPATH, 
+		COOKIE_DOMAIN, 
+		is_ssl(), // Set to true if your site uses HTTPS
+		true      // HttpOnly = true is safer
+	);
+    
+    wp_send_json_success();
+}
+add_action('wp_ajax_nopriv_sscc_user_register', 'sscc_user_register');
+add_action('wp_ajax_sscc_user_register', 'sscc_user_register');
+
+/**
+ * Handle Custom Email Login
+ */
+function sscc_user_login() {
+    global $wpdb;
+    $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+    $pass  = wp_unslash( $_POST['password'] ?? '' );
+    
+    $user = $wpdb->get_row( $wpdb->prepare("SELECT id, email, pass_hash FROM {$wpdb->prefix}sscc_users WHERE email = %s", $email) );
+    
+    if ( ! $user || ! wp_check_password( $pass, $user->pass_hash ) ) {
+        wp_send_json_error( [ 'message' => 'Invalid email or password.' ] );
+    }
+    
+    // Issue Custom User Cookie
+    $hash = md5($user->id . $user->email . NONCE_SALT);
+    setcookie('sscc_user_auth', base64_encode($user->id . '|' . $hash), time() + (30 * DAY_IN_SECONDS), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
+    
+    wp_send_json_success();
+}
+add_action('wp_ajax_nopriv_sscc_user_login', 'sscc_user_login');
+add_action('wp_ajax_sscc_user_login', 'sscc_user_login');
+
+/**
+ * Handle Custom Logout
+ */
+function sscc_user_logout() {
+    setcookie('sscc_user_auth', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
+    wp_send_json_success();
+}
+add_action('wp_ajax_nopriv_sscc_user_logout', 'sscc_user_logout');
+add_action('wp_ajax_sscc_user_logout', 'sscc_user_logout');
+
+/**
+ * Magic Links & Legacy Token table schema kept for potential future use.
  */
 function sscc_create_magic_token_table() {
     global $wpdb;
-    $table   = $wpdb->prefix . 'ssc_magic_tokens';
+    $table = $wpdb->prefix . 'ssc_magic_tokens';
     $charset = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        user_id BIGINT UNSIGNED NOT NULL,
-        token VARCHAR(64) NOT NULL,
-        expires DATETIME NOT NULL,
-        used TINYINT(1) DEFAULT 0,
-        PRIMARY KEY (id),
-        KEY token (token)
-    ) $charset;";
-
+    $sql = "CREATE TABLE IF NOT EXISTS $table ( id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, user_id BIGINT UNSIGNED NOT NULL, token VARCHAR(64) NOT NULL, expires DATETIME NOT NULL, used TINYINT(1) DEFAULT 0, PRIMARY KEY (id), KEY token (token) ) $charset;";
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta( $sql );
 }
-
-/**
- * Extend auth cookie to 1 year
- */
-add_filter( 'auth_cookie_expiration', function( $seconds ) {
-    return YEAR_IN_SECONDS;
-});
-
-/**
- * Generate magic link for a user
- */
-function sscc_generate_magic_link( $user_id ) {
-    global $wpdb;
-    $table   = $wpdb->prefix . 'ssc_magic_tokens';
-    $token   = wp_generate_password( 32, false );
-    $expires = gmdate( 'Y-m-d H:i:s', time() + 3600 ); // 1 hour
-
-    $wpdb->insert( $table, [
-        'user_id' => $user_id,
-        'token'   => $token,
-        'expires' => $expires,
-    ] );
-
-    return add_query_arg(
-        [ 'ssc_token' => $token ],
-        site_url( '/chore-chart/' )
-    );
-}
-
-/**
- * Handle magic-link auto-login
- */
-add_action( 'init', function() {
-    if ( ! isset( $_GET['ssc_token'] ) ) return;
-
-    global $wpdb;
-    $table = $wpdb->prefix . 'ssc_magic_tokens';
-    $token = sanitize_text_field( $_GET['ssc_token'] );
-
-    $row = $wpdb->get_row( $wpdb->prepare(
-        "SELECT * FROM $table WHERE token = %s AND used = 0 AND expires > NOW()",
-        $token
-    ) );
-
-    if ( ! $row ) return;
-
-    // Mark token used
-    $wpdb->update( $table, [ 'used' => 1 ], [ 'id' => $row->id ] );
-
-    // Log user in with persistent cookie
-    wp_set_auth_cookie( $row->user_id, true );
-    wp_redirect( site_url( '/chore-chart/' ) );
-    exit;
-});
-
-/**
- * AJAX: send magic link to current user
- */
-function sscc_send_magic_link() {
-    $user = wp_get_current_user();
-    if ( ! $user || ! $user->ID ) {
-        wp_send_json_error( [ 'message' => 'Not logged in as a parent.' ] );
-    }
-
-    $link = sscc_generate_magic_link( $user->ID );
-
-    wp_mail(
-        $user->user_email,
-        'Your Chore Chart Login Link',
-        "Tap this link to log in:\n\n{$link}\n\nThis link expires in 1 hour."
-    );
-
-    wp_send_json_success( [ 'message' => 'Magic link sent to your email.' ] );
-}
-add_action( 'wp_ajax_sscc_send_magic_link', 'sscc_send_magic_link' );
-
-/**
- * AJAX: password login (optional)
- */
-function sscc_password_login() {
-    $email    = isset( $_POST['email'] ) ? sanitize_text_field( $_POST['email'] ) : '';
-    $password = isset( $_POST['password'] ) ? $_POST['password'] : '';
-
-    if ( ! $email || ! $password ) {
-        wp_send_json_error( [ 'message' => 'Email and password are required.' ] );
-    }
-
-    $creds = [
-        'user_login'    => $email,
-        'user_password' => $password,
-        'remember'      => true,
-    ];
-
-    $user = wp_signon( $creds );
-
-    if ( is_wp_error( $user ) ) {
-        wp_send_json_error( [ 'message' => 'Invalid login.' ] );
-    }
-
-    wp_send_json_success( [ 'message' => 'Logged in.' ] );
-}
-add_action( 'wp_ajax_nopriv_sscc_password_login', 'sscc_password_login' );

@@ -1,4 +1,4 @@
-/* Super Star Chore Chart – Frontend v2.0.0
+/* Super Star Chore Chart – Frontend v2.1.0
  * Family-based, server-synced chore chart for WordPress
  * All data stored in the database; polls for changes every N seconds.
  */
@@ -50,13 +50,23 @@
     m._t = setTimeout(() => { m.textContent = ''; m.className = 'sscc-msg'; }, 4000);
   }
 
-  // ── Boot ────────────────────────────────────────────────────────────────────
+// ── Debuggable Boot Sequence ────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
-    if (!app()) return;
-    if (!cfg.loggedIn) return; // PHP already rendered the login gate
-    if (!state.family) { renderFamilyGate(); return; }
-    loadAndRender();
-  });
+    const container = app();
+    if (!container) return;
+    
+    // If SSCC.loggedIn is true (from our updated PHP), load the app
+    if (cfg.loggedIn) {
+        if (state.family || cfg.family) {
+            state.family = cfg.family;
+            loadAndRender();
+        } else {
+            // Still logged in, but need to assign to a family
+            renderFamilyGate();
+        }
+    }
+    // If not logged in, PHP has rendered the login/register shortcode
+});
 
   // ── Family Create / Join ────────────────────────────────────────────────────
   function renderFamilyGate() {
@@ -217,6 +227,17 @@
 
   function renderKidChart(kid) {
     return `
+    <div class="sscc-print-header sscc-print-only">
+      <h2 style="text-align:center; font-size: 24px; margin: 0 0 15px 0;">Super Star Chore Chart</h2>
+      <div style="display:flex; justify-content: space-between; font-size: 16px; margin-bottom: 10px;">
+        <div><strong>Name:</strong> ${esc(kid.name)}</div>
+        <div><strong>Week of:</strong> ${esc(fmtWeek(state.weekOf))}</div>
+      </div>
+      <div style="font-size: 14px; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 5px;">
+        Team Duty (unpaid) | <strong>$</strong> Paid Gig
+      </div>
+    </div>
+    
     <div class="sscc-chart-wrap">
     ${state.editMode && state.kids.length > 0 ? `
       <div class="sscc-edit-kid-name">
@@ -236,7 +257,7 @@
             <td colspan="9">
               ${state.editMode
                 ? `<input class="sscc-cat-name-input" type="text" data-ci="${ci}" value="${esc(cat.name)}" maxlength="60">`
-                : `<strong>${esc(cat.name)}</strong> ${cat.isPaidCat ? '<span class="sscc-paid-badge">💰 Paid</span>' : '<span class="sscc-unpaid-badge">Team Duty</span>'}`}
+                : `<strong>${ci + 1}. ${esc(cat.name).toUpperCase()}</strong> ${cat.isPaidCat ? '<span class="sscc-paid-badge sscc-no-print">💰 Paid</span><span class="sscc-print-only" style="display:inline; font-size:12px;">(Paid Gigs)</span>' : '<span class="sscc-unpaid-badge sscc-no-print">Team Duty</span><span class="sscc-print-only" style="display:inline; font-size:12px;">(Team Duties Unpaid)</span>'}`}
             </td>
           </tr>
           ${(cat.tasks||[]).map((task,ti) => renderTaskRow(task, ci, ti, cat.isPaidCat)).join('')}
@@ -274,7 +295,7 @@
         ` : `
           ${paid ? `<span class="sscc-paid-dot">$</span>` : ''}
           ${esc(task.name)}
-          ${paid && task.unit === 'flat' ? ` <em class="sscc-flat">(flat $${Number(task.amount).toFixed(2)})</em>` : ''}
+          ${paid && task.unit === 'flat' ? ` <em class="sscc-flat">- $${Number(task.amount).toFixed(2)}/flat</em>` : ''}
           ${paid && task.unit === 'day'  ? ` <em class="sscc-rate">$${Number(task.amount).toFixed(2)}/day</em>` : ''}
         `}
       </td>
@@ -284,7 +305,7 @@
             ${checks[d]?'✓':''}
           </button>
         </td>`).join('')}
-      <td class="sscc-total">${paid ? (earned > 0 ? '$' + earned.toFixed(2) : '—') : '—'}</td>
+      <td class="sscc-total">${paid ? (earned > 0 ? '$' + earned.toFixed(2) : '$0.00') : '—'}</td>
     </tr>`;
   }
 
@@ -298,8 +319,11 @@
       });
     });
     return `<div class="sscc-earnings">
-      <span>Weekly Earnings for <strong>${esc(kid.name)}</strong>:</span>
-      <span class="sscc-earnings-total">$${total.toFixed(2)}</span>
+      <div style="font-size:16px; font-weight:bold; margin-bottom:8px;" class="sscc-print-only">WEEKLY EARNINGS SUMMARY</div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Weekly Earnings for <strong>${esc(kid.name)}</strong>:</span>
+        <span class="sscc-earnings-total">$${total.toFixed(2)}</span>
+      </div>
     </div>`;
   }
 
@@ -445,7 +469,7 @@
           const paid  = task2.isPaid || state.kids[state.activeKidIdx].categories[ci].isPaidCat;
           const done  = DAYS.filter(d => task2.checks?.[d]).length;
           const earned = paid ? (task2.unit==='flat' ? (done>0?task2.amount:0) : done*(task2.amount||0)) : null;
-          totalCell.textContent = paid ? (earned > 0 ? '$' + earned.toFixed(2) : '—') : '—';
+          totalCell.textContent = paid ? (earned > 0 ? '$' + earned.toFixed(2) : '$0.00') : '—';
         }
       };
     });
@@ -455,7 +479,70 @@
     if (btnEdit) btnEdit.onclick = () => { state.editMode = !state.editMode; renderChart(); };
 
     const btnPrint = el('btn-print');
-    if (btnPrint) btnPrint.onclick = () => window.print();
+    if (btnPrint) {
+      btnPrint.onclick = () => {
+        // Create an invisible iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+
+        // Grab the current HTML of the chart
+        const appHtml = document.getElementById('sscc-app').innerHTML;
+
+        // Write a clean, isolated document into the iframe
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Super Star Chore Chart</title>
+            <link rel="stylesheet" href="${cfg.pluginUrl}assets/app.css" type="text/css" />
+            <style>
+              /* Strip all margins and force white background */
+              body { margin: 0; padding: 0; background: #fff; }
+              
+              /* Pre-hide the UI elements so they don't flash */
+              .sscc-toolbar, .sscc-kid-tabs, .sscc-header,
+              .sscc-edit-banner, .sscc-msg, .sscc-add-task-row, 
+              .sscc-add-cat-row, .sscc-btn, .sscc-btn-sm, 
+              .sscc-rm-kid, .sscc-modal-overlay, .sscc-no-print { 
+                display: none !important; 
+              }
+              .sscc-print-only { display: block !important; }
+            </style>
+          </head>
+          <body>
+            <div id="sscc-app">
+              ${appHtml}
+            </div>
+            <script>
+              // Wait for CSS to load, then trigger print
+              window.onload = function() {
+                setTimeout(function() {
+                  window.focus();
+                  window.print();
+                }, 400); 
+              };
+            </script>
+          </body>
+          </html>
+        `);
+        doc.close();
+
+        // Clean up the iframe after 10 seconds to keep the DOM clean
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 10000);
+      };
+    }
 
     const btnArchive = el('btn-archive');
     if (btnArchive) btnArchive.onclick = handleArchive;
