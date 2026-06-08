@@ -1,7 +1,27 @@
 /* Super Star Chore Chart – Stylesheet v2.1.0
    Black-and-white base, print-ready, family management UI
 */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --accent-color: #006d77;
+}
 
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --accent-color: #83c5be;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Update your table/card styles to use these variables */
+.sscc-app-container { background-color: var(--bg-color); }
+.sscc-btn { background-color: var(--accent-color); color: #fff; }
 /* ── Reset & Base ─────────────────────────────────────────────────────────── */
 #sscc-app *, #sscc-app *::before, #sscc-app *::after { box-sizing: border-box; }
 #sscc-app {

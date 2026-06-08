@@ -28,6 +28,7 @@ $sscc_actions = [
     'sscc_get_state',     'sscc_save_chart',      'sscc_save_defaults',
     'sscc_archive_week',  'sscc_get_archives',    'sscc_poll',
     'sscc_add_kid',       'sscc_remove_kid',      'sscc_rename_kid',
+	'sscc_manifest',
 ];
 foreach ( $sscc_actions as $action ) {
     add_action( "wp_ajax_{$action}", "sscc_ajax_{$action}" );
@@ -206,4 +207,38 @@ function sscc_ajax_sscc_rename_kid() {
     foreach ( $kids as &$k ) { if ( $k['id'] === $kid_id ) { $k['name'] = $name; break; } }
     sscc_set_chart_data( $fid, 'kids', $kids, $ctx['uid'] );
     wp_send_json_success( [ 'kids' => $kids ] );
+}
+
+// ── Web App Manifest ────────────────────────────────────────────────────────
+function sscc_ajax_sscc_manifest() {
+    header( 'Content-Type: application/manifest+json' );
+    
+    // Find the URL of the page containing the shortcode to use as the launch URL
+    $page = get_page_by_path('chore-chart');
+    // Find the original start_url calculation and replace it with:
+    $start_url = site_url('?sscc_view=app'); // Directly loads the isolated app
+
+    echo wp_json_encode([
+        "name"             => "Super Star Chore Chart",
+        "short_name"       => "Chores",
+        "display"          => "standalone", // Hides the browser UI completely
+        "start_url"        => $start_url,
+        "background_color" => "#111111",
+        "theme_color"      => "#111111",
+        "icons"            => [
+            [
+                "src"   => SSCC_URL . "assets/icon.png",
+                "sizes" => "192x192",
+                "type"  => "image/png",
+                "purpose" => "any maskable"
+            ],
+            [
+                "src"   => SSCC_URL . "assets/icon.png",
+                "sizes" => "512x512",
+                "type"  => "image/png",
+                "purpose" => "any maskable"
+            ]
+        ]
+    ]);
+    exit;
 }

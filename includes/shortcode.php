@@ -1,11 +1,20 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-function sscc_chore_chart_shortcode() {
+function sscc_render_shortcode() {
     ob_start();
+    // Check if the user has our custom app cookie
     $user = function_exists('sscc_get_auth_user') ? sscc_get_auth_user() : null;
     ?>
-    <div id="sscc-login-wrapper">
+    <div class="sscc-app-container" style="
+        width: 100%; 
+        max-width: fit-content; 
+        margin: 40px auto; 
+        border-radius: 16px; 
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); 
+        background: #ffffff; 
+        overflow: hidden;">
+        
         <?php if ( ! $user ): ?>
             <div style="max-width:400px; margin: 40px auto; padding: 30px; border: 1px solid #ddd; border-radius: 10px; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
                 <h2 style="text-align:center; margin-top:0;">⭐ Chore Chart</h2>
@@ -21,61 +30,66 @@ function sscc_chore_chart_shortcode() {
                 </label>
                 
                 <div style="display:flex; gap:10px;">
-                    <button id="ssc-login-btn" class="sscc-btn" style="flex:1;">Log In</button>
-                    <button id="ssc-register-btn" class="sscc-btn sscc-btn-outline" style="flex:1;">Create Account</button>
+                    <button id="ssc-login-btn" class="sscc-btn" style="flex:1; cursor:pointer;">Log In</button>
+                    <button id="ssc-register-btn" class="sscc-btn sscc-btn-outline" style="flex:1; cursor:pointer;">Create Account</button>
                 </div>
             </div>
+
+            <script>
+            (function() {
+                var ajaxUrl = "<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>";
+                
+                function postAuth(action) {
+                    var email = document.getElementById('ssc-email').value;
+                    var pass  = document.getElementById('ssc-password').value;
+                    if(!email || !pass) return alert("Email and password required.");
+                    
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', ajaxUrl, true);
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+                    xhr.onload = function() {
+                        try {
+                            var res = JSON.parse(xhr.responseText);
+                            if(res.success) { window.location.reload(); }
+                            else { document.getElementById('ssc-auth-msg').textContent = res.data.message; }
+                        } catch(e) { document.getElementById('ssc-auth-msg').textContent = "Server error."; }
+                    };
+                    xhr.send('action=' + action + '&email=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(pass));
+                }
+
+                var loginBtn = document.getElementById('ssc-login-btn');
+                if (loginBtn) loginBtn.onclick = function() { postAuth('sscc_user_login'); };
+
+                var regBtn = document.getElementById('ssc-register-btn');
+                if (regBtn) regBtn.onclick = function() { postAuth('sscc_user_register'); };
+            })();
+            </script>
+
         <?php else: ?>
-            <div style="text-align:right; margin-bottom: 10px; font-size: 13px; color:#555;">
+            <div style="text-align:right; padding: 10px 20px; font-size: 13px; color:#555; background:#f9f9f9; border-bottom:1px solid #eee;">
                 Logged in as <strong><?php echo esc_html($user['email']); ?></strong>. 
-                <a href="#" id="ssc-logout-btn" style="color:#d97706; text-decoration:underline;">Sign Out</a>
+                <a href="#" id="ssc-logout-btn" style="color:#d97706; text-decoration:underline; margin-left:10px;">Sign Out</a>
             </div>
             
-            <div id="sscc-app">
-                </div>
+            <div id="sscc-app"></div>
+
+            <script>
+            (function() {
+                var logoutBtn = document.getElementById('ssc-logout-btn');
+                if (logoutBtn) logoutBtn.onclick = function(e) {
+                    e.preventDefault();
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', "<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>", true);
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+                    xhr.onload = function() { window.location.reload(); };
+                    xhr.send('action=sscc_user_logout');
+                };
+            })();
+            </script>
         <?php endif; ?>
-    </div>
-
-    <script>
-    (function() {
-        var ajaxUrl = "<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>";
         
-        function postAuth(action) {
-            var email = document.getElementById('ssc-email').value;
-            var pass  = document.getElementById('ssc-password').value;
-            if(!email || !pass) return alert("Email and password required.");
-            
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', ajaxUrl, true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-            xhr.onload = function() {
-                try {
-                    var res = JSON.parse(xhr.responseText);
-                    if(res.success) { window.location.reload(); }
-                    else { document.getElementById('ssc-auth-msg').textContent = res.data.message; }
-                } catch(e) { document.getElementById('ssc-auth-msg').textContent = "Server error."; }
-            };
-            xhr.send('action=' + action + '&email=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(pass));
-        }
-
-        var loginBtn = document.getElementById('ssc-login-btn');
-        if (loginBtn) loginBtn.onclick = function() { postAuth('sscc_user_login'); };
-
-        var regBtn = document.getElementById('ssc-register-btn');
-        if (regBtn) regBtn.onclick = function() { postAuth('sscc_user_register'); };
-
-        var logoutBtn = document.getElementById('ssc-logout-btn');
-        if (logoutBtn) logoutBtn.onclick = function(e) {
-            e.preventDefault();
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', ajaxUrl, true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-            xhr.onload = function() { window.location.reload(); };
-            xhr.send('action=sscc_user_logout');
-        };
-    })();
-    </script>
+    </div>
     <?php
     return ob_get_clean();
 }
-add_shortcode( 'chore_chart', 'sscc_chore_chart_shortcode' );
+add_shortcode('chore_chart', 'sscc_render_shortcode');
