@@ -1,144 +1,94 @@
-# Super Star Chore Chart  
-### A WordPress Plugin for Family Chore Management
+# ⭐ Super Star Chore Chart  
+### A SaaS-Style WordPress Plugin for Family Chore Management
 
-Super Star Chore Chart is a family‑friendly, server‑synced chore management system built as a WordPress plugin. It helps families organize daily responsibilities, track paid and unpaid tasks, and keep everyone in sync across multiple devices — all inside your WordPress site.
+Super Star Chore Chart is a family‑friendly, server‑synced chore management system built as a WordPress plugin. It helps families organize daily responsibilities, track paid and unpaid tasks, and keep everyone in sync across multiple devices. 
+
+With recent updates, it now functions as a **standalone Progressive Web App (PWA)** with isolated user accounts, meaning your family members never have to see or interact with the WordPress dashboard!
 
 ---
 
-## ✨ Features
+## ✨ New in Version 2.4+
 
-### 👨‍👩‍👧 Family System
-- Each WordPress user can create a **family** with a shared name and password  
-- Other family members join using the family credentials  
-- All members see and update the **same chore chart**  
-- Changes sync automatically via server‑side polling (default: 15 seconds)
+### 📱 Progressive Web App (PWA)
+- **Installable:** Users can install the chore chart directly to their iOS or Android home screens for a native full-screen app experience.
+- **Smart Prompts:** Native Android install prompts and custom iOS Safari instructions.
+
+### 🔐 Isolated App Authentication
+- **No WP Accounts Needed:** Uses a custom, secure cookie-based login system. Users don't need WordPress subscriber accounts.
+- **Self-Serve Password Resets:** Built-in "Forgot Password" flow sends a secure, time-limited reset link via email.
+
+### 🔗 Magic Link Invites
+- **One-Click Joins:** Family admins can generate a secure "Invite Link." 
+- **Frictionless:** When clicked, family members are instantly logged in via a guest account and added to the family chart—no passwords required!
+
+### 🌗 Light / Dark Mode
+- **System-Aware:** Automatically detects the user's OS preference (Dark or Light mode).
+- **Manual Toggle:** A simple toggle switch in the app header allows users to override the theme, saving their preference instantly.
+
+---
+
+## 👨‍👩‍👧 Core Features
+
+### Family System & Live Sync
+- Create a **family** with a shared name and password (or use Magic Links). 
+- All members see and update the **same chore chart**.  
+- Changes sync automatically across all devices via background server polling.
 
 ### 🧒 Per‑Kid Chore Tabs
-- Add, rename, or remove kids  
-- Each kid gets their own chore list  
-- Daily checkboxes (Mon–Sun)  
-- Per‑task totals and weekly earnings summary  
-- Clean **black‑and‑white Print Mode** for easy home printing
+- Add, rename, or remove kids easily.  
+- Each kid gets their own chore list with daily checkboxes (Mon–Sun).  
+- Real-time per‑task totals and weekly earnings summaries.
+- Clean **black‑and‑white Print Mode** for pinning to the fridge.
 
-### 🧹 Chore Categories
-Organized into intuitive groups:
-- Personal Care & Gear  
-- Shared Spaces & Meals  
-- Kitchen Crew  
-- Bathroom Patrol  
-- General Helpers  
-- Brain Gigs  
-- Community  
+### 🧹 Chore Categories & Pay
+Organized into intuitive groups (Personal Care, Kitchen Crew, Brain Gigs, etc.). Supports:
+- **Unpaid Team Duties** - **Paid Gigs** (Choose between Flat Rate or Per-Day pay structures)
 
-Supports:
-- **Unpaid Team Duties**  
-- **Paid Gigs** with customizable pay amounts  
-
-### 🛠️ Edit Mode
-- Rename tasks  
-- Adjust pay rates  
-- Toggle paid/unpaid  
-- Reorder or remove tasks  
-
-### 📋 Templates & Weekly Archives
-- Save a **Default Template** to quickly reset each week  
-- Automatically archive completed weeks  
-- Review past performance and earnings  
-
-### 🔒 Secure & Reliable
-- Server‑side storage in custom WordPress database tables  
-- All AJAX requests protected with WordPress nonces  
-- Family passwords hashed using `wp_hash_password()`  
-- Works with any WordPress theme  
+### 🛠️ Edit Mode & Archives
+- Easily rename tasks, adjust pay rates, or toggle paid/unpaid status.
+- Save a **Default Template** to quickly reset the board every Sunday.  
+- Automatically archive completed weeks to review past performance and earnings.
 
 ---
 
 ## 📦 Installation
 
-1. Download the plugin ZIP from the **Releases** page.  
-2. In WordPress, go to **Plugins → Add New → Upload Plugin**.  
-3. Upload `super-star-chore-chart.zip` and click **Install Now**.  
-4. Activate the plugin.  
-5. A **Chore Chart** page is automatically created at:  
+1. Download the latest plugin ZIP from the **Releases** page.  
+2. In your WordPress Admin, go to **Plugins → Add New → Upload Plugin**.  
+3. Upload `super-star-chore-chart.zip` and click **Install Now**, then **Activate**.  
+4. A **Chore Chart** page is automatically created for you at `/chore-chart/`.  
+5. Use the shortcode `[chore_chart]` on any page to render the app.
 
-/chore-chart/
-
-6. Visit **Settings → Chore Chart** to configure options.  
-7. Use the shortcode anywhere:  
-
-[chore_chart]
-
+*(Note: Ensure your WordPress Permalinks are set to "Post name" for Magic Links and Password Resets to route correctly).*
 
 ---
 
 ## 🧰 How to Use
 
-### 1. Create or Join a Family
-- Logged‑in users create a family name + password  
-- Other users join using the same credentials  
-
-### 2. Add Kids
-- Each kid gets a tab  
-- Customize names and order  
-
-### 3. Customize Tasks
-- Add new tasks  
-- Mark tasks as paid or unpaid  
-- Set pay amounts  
-- Organize tasks by category  
-
-### 4. Track Progress
-- Kids check off tasks daily  
-- Paid tasks automatically calculate totals  
-- Weekly earnings summary updates in real time  
-
-### 5. Print or Archive
-- Use **Print Mode** for a clean, black‑and‑white printable chart  
-- Weekly Archives store past weeks for review  
+1. **Create an Account:** Visit the page where your shortcode is located and create an account with your email.
+2. **Create a Family:** Create a new family name and secure password.
+3. **Invite Members:** Click the **"🔗 Invite Link"** button to copy a magic URL. Text it to your kids or spouse to let them join instantly!
+4. **Customize:** Click **"⚙ Edit Settings"** to set up your default tasks.
+5. **Track Progress:** Kids check off tasks daily. Earnings calculate automatically.
+6. **Archive:** At the end of the week, click **"🗄 Archive & New Week"** to save the history and reset the board!
 
 ---
 
 ## 🗂️ Folder Structure
 
-
-super-star-chore-chart/ │ ├── super-star-chore-chart.php ├── readme.txt ├── assets/ ├── includes/ └── templates/
-
-
----
-
-## 🧪 Development
-
-Clone the repository:
-
-```bash
-git clone https://github.com/qrussell/super-star-chore-chart.git
-
-Install dependencies (if applicable):
-
-composer install
-npm install
-
-Build assets:
-
-npm run build
-
-🤝 Contributing
-
-Pull requests are welcome.To contribute:
-
-Fork the repository
-
-Create a feature branch
-
-Commit your changes
-
-Open a pull request
-
-📝 License
-
-GPLv2 or laterSee LICENSE for full details.
-
-❤️ Credits
-
-Created by Quentin to help families build responsibility, independence, and teamwork through a fun, structured chore system.
-
+```text
+super-star-chore-chart/
+├── super-star-chore-chart.php  # Main plugin & URL router
+├── readme.txt                  # WP repository readme
+├── assets/                     
+│   ├── app.js                  # Frontend logic (PWA, Theme, App State)
+│   ├── app.css                 # UI Styling (CSS Variables for Dark Mode)
+│   ├── sw.js                   # Service Worker for PWA installation
+│   └── icon.png                # PWA App Icon
+├── includes/                   
+│   ├── ajax.php                # Backend endpoints (Saves, Syncs, Emails)
+│   ├── db.php                  # Database table creation
+│   ├── login.php               # Auth handlers
+│   └── shortcode.php           # Renders the Login/App UI
+└── admin/                      
+    └── settings.php            # WP Admin dashboard settings
