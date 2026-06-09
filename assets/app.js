@@ -2,9 +2,31 @@
  * Family-based, server-synced chore chart for WordPress
  * All data stored in the database; polls for changes every N seconds.
  */
+ // --- Theme Handling ---
+const toggleTheme = () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('sscc-theme', newTheme);
+};
+
+const initTheme = () => {
+    const saved = localStorage.getItem('sscc-theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+    } else if (systemDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+};
+
+// Initialize immediately
+initTheme();
+
 (function () {
   'use strict';
-
+  initTheme();
   const cfg    = window.SSCC || {};
   const AJAX   = cfg.ajaxUrl || '/wp-admin/admin-ajax.php';
   const NONCE  = cfg.nonce   || '';
@@ -187,6 +209,7 @@
     <div class="sscc-header">
       <div class="sscc-header-top">
         <h1>⭐ Super Star Chore Chart</h1>
+        <button onclick="toggleTheme()" class="sscc-btn-sm" style="margin-left:10px;">☀️/🌙</button>
         <div class="sscc-family-badge" title="Family: ${esc(fam?.name)}">${esc(fam?.name)}</div>
       </div>
       <div class="sscc-header-meta">
