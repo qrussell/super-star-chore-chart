@@ -1,8 +1,28 @@
-/* Super Star Chore Chart – Frontend v2.1.0
+/* Super Star Chore Chart – Frontend v2.2.0
  * Family-based, server-synced chore chart for WordPress
- * All data stored in the database; polls for changes every N seconds.
+ * Features: PWA, Light/Dark Mode, Magic Links, Multi-Tenant Auth
  */
- // --- Theme Handling ---
+
+// ── PWA Installation Handling ───────────────────────────────────────────────
+let deferredPrompt;
+if ('serviceWorker' in navigator) {
+    const swPath = (window.SSCC?.pluginUrl || '/') + 'assets/sw.js';
+    navigator.serviceWorker.register(swPath).catch(() => {});
+}
+
+// Detect if device is iOS and not already installed
+const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+const isStandalone = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Reveal the install button if it exists in the DOM
+    const btn = document.getElementById('btn-install-pwa');
+    if (btn) btn.style.display = 'inline-block';
+});
+
+// ── Theme Handling (Light / Dark Mode) ──────────────────────────────────────
 const toggleTheme = () => {
     const current = document.documentElement.getAttribute('data-theme');
     const newTheme = current === 'dark' ? 'light' : 'dark';
@@ -21,12 +41,13 @@ const initTheme = () => {
     }
 };
 
-// Initialize immediately
+// Initialize immediately to prevent bright flashes
 initTheme();
 
+// ── Main Application ────────────────────────────────────────────────────────
 (function () {
   'use strict';
-  initTheme();
+
   const cfg    = window.SSCC || {};
   const AJAX   = cfg.ajaxUrl || '/wp-admin/admin-ajax.php';
   const NONCE  = cfg.nonce   || '';
@@ -37,7 +58,7 @@ initTheme();
   let state = { family: cfg.family || null, kids: [], weekOf: '', defaults: [], updatedAt: null,
                 activeKidIdx: 0, editMode: false, saving: false, pollTimer: null };
 
-  // ── Utilities ───────────────────────────────────────────────────────────────
+  // ── Utilities ─────────────────────────────────────────────────────────────
   const el  = id => document.getElementById(id);
   const app = () => el('sscc-app');
   const esc = s  => String(s).replace(/[&<>"']/g, c =>
@@ -72,25 +93,22 @@ initTheme();
     m._t = setTimeout(() => { m.textContent = ''; m.className = 'sscc-msg'; }, 4000);
   }
 
-// ── Debuggable Boot Sequence ────────────────────────────────────────────────
+  // ── Boot Sequence ─────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     const container = app();
     if (!container) return;
     
-    // If SSCC.loggedIn is true (from our updated PHP), load the app
     if (cfg.loggedIn) {
         if (state.family || cfg.family) {
             state.family = cfg.family;
             loadAndRender();
         } else {
-            // Still logged in, but need to assign to a family
             renderFamilyGate();
         }
     }
-    // If not logged in, PHP has rendered the login/register shortcode
-});
+  });
 
-  // ── Family Create / Join ────────────────────────────────────────────────────
+  // ── Family Create / Join ──────────────────────────────────────────────────
   function renderFamilyGate() {
     app().innerHTML = `
     <div class="sscc-gate">
@@ -149,7 +167,7 @@ initTheme();
     };
   }
 
-  // ── Load Data & Render Chart ─────────────────────────────────────────────────
+  // ── Load Data & Render Chart ──────────────────────────────────────────────
   function loadAndRender() {
     app().innerHTML = '<div class="sscc-loading"><span class="sscc-spinner">⭐</span> Loading chart…</div>';
     post('sscc_get_state', {})
@@ -166,7 +184,7 @@ initTheme();
       .catch(e => { app().innerHTML = `<div class="sscc-err">Error: ${esc(e.message)}</div>`; });
   }
 
-  // ── Poll for changes ─────────────────────────────────────────────────────────
+  // ── Poll for changes ──────────────────────────────────────────────────────
   function startPolling() {
     clearInterval(state.pollTimer);
     state.pollTimer = setInterval(() => {
@@ -188,7 +206,7 @@ initTheme();
       }).catch(() => {});
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
   let saveTimer = null;
   function scheduleSave() {
     clearTimeout(saveTimer);
@@ -201,7 +219,7 @@ initTheme();
       .catch(e => showMsg('Save failed: ' + e.message, true));
   }
 
-  // ── Main Chart Renderer ───────────────────────────────────────────────────────
+  // ── Main Chart Renderer ───────────────────────────────────────────────────
   function renderChart() {
     const kid  = state.kids[state.activeKidIdx] || null;
     const fam  = state.family;
@@ -209,7 +227,7 @@ initTheme();
     <div class="sscc-header">
       <div class="sscc-header-top">
         <h1>⭐ Super Star Chore Chart</h1>
-        <button onclick="toggleTheme()" class="sscc-btn-sm" style="margin-left:10px;">☀️/🌙</button>
+        <button onclick="toggleTheme()" class="sscc-btn-sm" style="margin-left:10px; cursor:pointer;" title="Toggle Light/Dark Mode">☀️/🌙</button>
         <div class="sscc-family-badge" title="Family: ${esc(fam?.name)}">${esc(fam?.name)}</div>
       </div>
       <div class="sscc-header-meta">
@@ -220,8 +238,10 @@ initTheme();
     </div>
 
     <div class="sscc-toolbar">
+      <button class="sscc-btn-sm" id="btn-install-pwa" style="display:${(deferredPrompt || (isIos() && !isStandalone())) ? 'inline-block' : 'none'}; background:#d97706; color:#fff; border-color:#b45309;">📱 Install App</button>
+      <button class="sscc-btn-sm" id="btn-magic-link">🔗 Invite Link</button>
       <button class="sscc-btn-sm" id="btn-archive">🗄 Archive & New Week</button>
-      <button class="sscc-btn-sm" id="btn-defaults">⚙ Edit Defaults</button>
+      <button class="sscc-btn-sm" id="btn-defaults">⚙ Edit Settings</button>
       <button class="sscc-btn-sm ${state.editMode?'active':''}" id="btn-edit">
         ${state.editMode ? '✅ Done Editing' : '✏ Edit Kid'}
       </button>
@@ -350,8 +370,40 @@ initTheme();
     </div>`;
   }
 
-  // ── Event Binding ─────────────────────────────────────────────────────────────
+  // ── Event Binding ─────────────────────────────────────────────────────────
   function bindChartEvents() {
+    
+    // PWA Install Event
+    const btnInstall = el('btn-install-pwa');
+    if (btnInstall) {
+        if (isIos() && !isStandalone()) {
+            btnInstall.style.display = 'inline-block';
+            btnInstall.onclick = () => {
+                alert('To install this app on your iPhone:\n\n1. Tap the Share button at the bottom of Safari.\n2. Scroll down and tap "Add to Home Screen".');
+            };
+        } else {
+            btnInstall.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') btnInstall.style.display = 'none';
+                    deferredPrompt = null;
+                }
+            };
+        }
+    }
+
+    // Magic Link Generation
+    const btnMagic = el('btn-magic-link');
+    if (btnMagic) {
+        btnMagic.onclick = () => {
+            post('sscc_get_magic_link', {}).then(d => {
+                navigator.clipboard.writeText(d.url);
+                showMsg('Invite Link copied to clipboard!');
+            }).catch(e => showMsg(e.message, true));
+        };
+    }
+
     // Kid tabs
     app().querySelectorAll('.sscc-kid-tab[data-idx]').forEach(btn => {
       btn.onclick = () => { state.activeKidIdx = parseInt(btn.dataset.idx); renderChart(); };
@@ -412,7 +464,7 @@ initTheme();
         const ci = parseInt(cb.dataset.ci), ti = parseInt(cb.dataset.ti);
         state.kids[state.activeKidIdx].categories[ci].tasks[ti].isPaid = cb.checked;
         scheduleSave();
-        renderChart(); // re-render to show/hide amount inputs
+        renderChart(); 
       };
     });
 
@@ -504,7 +556,6 @@ initTheme();
     const btnPrint = el('btn-print');
     if (btnPrint) {
       btnPrint.onclick = () => {
-        // Create an invisible iframe
         const iframe = document.createElement('iframe');
         iframe.style.position = 'fixed';
         iframe.style.right = '0';
@@ -514,10 +565,7 @@ initTheme();
         iframe.style.border = 'none';
         document.body.appendChild(iframe);
 
-        // Grab the current HTML of the chart
         const appHtml = document.getElementById('sscc-app').innerHTML;
-
-        // Write a clean, isolated document into the iframe
         const doc = iframe.contentWindow.document;
         doc.open();
         doc.write(`
@@ -527,10 +575,7 @@ initTheme();
             <title>Super Star Chore Chart</title>
             <link rel="stylesheet" href="${cfg.pluginUrl}assets/app.css" type="text/css" />
             <style>
-              /* Strip all margins and force white background */
               body { margin: 0; padding: 0; background: #fff; }
-              
-              /* Pre-hide the UI elements so they don't flash */
               .sscc-toolbar, .sscc-kid-tabs, .sscc-header,
               .sscc-edit-banner, .sscc-msg, .sscc-add-task-row, 
               .sscc-add-cat-row, .sscc-btn, .sscc-btn-sm, 
@@ -545,7 +590,6 @@ initTheme();
               ${appHtml}
             </div>
             <script>
-              // Wait for CSS to load, then trigger print
               window.onload = function() {
                 setTimeout(function() {
                   window.focus();
@@ -558,7 +602,6 @@ initTheme();
         `);
         doc.close();
 
-        // Clean up the iframe after 10 seconds to keep the DOM clean
         setTimeout(() => {
           if (document.body.contains(iframe)) {
             document.body.removeChild(iframe);
@@ -583,7 +626,7 @@ initTheme();
     };
   }
 
-  // ── Archive & New Week ────────────────────────────────────────────────────────
+  // ── Archive & New Week ────────────────────────────────────────────────────
   function handleArchive() {
     const choice = confirm(
       'Archive this week and start a new one?\n\n' +
@@ -603,17 +646,26 @@ initTheme();
       .catch(e => showMsg(e.message, true));
   }
 
-  // ── Edit Defaults Modal ───────────────────────────────────────────────────────
+  // ── Edit Settings / Defaults Modal ────────────────────────────────────────
   function handleEditDefaults() {
     const overlay = document.createElement('div');
     overlay.className = 'sscc-modal-overlay';
     overlay.innerHTML = `
     <div class="sscc-modal">
       <div class="sscc-modal-hdr">
-        <h2>⚙ Edit Default Task Template</h2>
+        <h2>⚙ Edit Settings & Defaults</h2>
         <button class="sscc-modal-close" id="def-close">✕</button>
       </div>
-      <p class="sscc-modal-sub">Changes here apply when resetting to defaults.</p>
+
+      <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.05); border-radius: 8px;">
+        <label style="font-weight:bold; display:block; margin-bottom:8px;">Change Family Password:</label>
+        <input type="text" id="new-fam-pass" placeholder="Leave blank to keep current password" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px;">
+        <small style="display:block; margin-top:5px; color:#666;">Minimum 4 characters. Changing this requires family members logging in from new devices to use the new password.</small>
+      </div>
+
+      <h3 style="margin-bottom:10px; font-size:16px;">Default Task Template:</h3>
+      <p class="sscc-modal-sub" style="margin-bottom:15px;">These tasks will be applied to kids when you choose to reset to defaults during the weekly archive.</p>
+      
       <div id="def-cats">
         ${state.defaults.map((cat,ci)=>`
           <div class="sscc-def-cat" data-ci="${ci}">
@@ -636,16 +688,17 @@ initTheme();
             <button class="sscc-add-deftask" data-ci="${ci}">+ Add Task</button>
           </div>`).join('')}
       </div>
-      <button id="btn-add-defcat">+ Add Category</button>
+      <button id="btn-add-defcat" style="margin-top:10px;">+ Add Category</button>
+      
       <div class="sscc-modal-footer">
-        <button class="sscc-btn" id="def-save">💾 Save Defaults</button>
+        <button class="sscc-btn" id="def-save">💾 Save Settings</button>
         <button class="sscc-btn sscc-btn-outline" id="def-cancel">Cancel</button>
       </div>
-      <div id="sscc-msg" class="sscc-msg"></div>
+      <div id="sscc-msg-modal" class="sscc-msg"></div>
     </div>`;
     document.body.appendChild(overlay);
 
-    const defs = JSON.parse(JSON.stringify(state.defaults)); // deep clone
+    const defs = JSON.parse(JSON.stringify(state.defaults));
 
     const collect = () => {
       overlay.querySelectorAll('.sscc-def-catname').forEach(inp => { defs[inp.dataset.ci].name = inp.value; });
@@ -657,11 +710,30 @@ initTheme();
     };
 
     el('def-save').onclick = () => {
-      collect();
-      post('sscc_save_defaults', { defaults: JSON.stringify(defs) })
-        .then(() => { state.defaults = defs; showMsg('Defaults saved!'); overlay.remove(); })
-        .catch(e => showMsg(e.message, true));
+        collect();
+        const newPass = el('new-fam-pass').value.trim();
+        const msgModal = el('sscc-msg-modal');
+        const showModalMsg = (txt, err) => {
+            msgModal.textContent = txt;
+            msgModal.className = 'sscc-msg ' + (err ? 'sscc-msg-err' : 'sscc-msg-ok');
+        };
+
+        const savePromises = [post('sscc_save_defaults', { defaults: JSON.stringify(defs) })];
+
+        if (newPass.length > 0) {
+            if (newPass.length < 4) return showModalMsg('Family password must be at least 4 characters.', true);
+            savePromises.push(post('sscc_change_family_password', { new_password: newPass }));
+        }
+
+        Promise.all(savePromises)
+            .then(() => { 
+                state.defaults = defs; 
+                showMsg('Settings & Defaults saved successfully!'); 
+                overlay.remove(); 
+            })
+            .catch(e => showModalMsg(e.message, true));
     };
+
     el('def-cancel').onclick = () => overlay.remove();
     el('def-close').onclick  = () => overlay.remove();
   }

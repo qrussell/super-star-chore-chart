@@ -1,6 +1,34 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+// ── Magic Link (Using Transients) ──────────────────────────────────────────
+function sscc_ajax_sscc_get_magic_link() {
+    $ctx = sscc_check_family_auth();
+    $fid = $ctx['family']['id'];
+    
+    // Generate a secure 20-character token
+    $token = wp_generate_password(20, false);
+    
+    // Save using WordPress Transients (Valid for 7 days, no DB table required!)
+    set_transient('sscc_magic_' . $token, $fid, 7 * DAY_IN_SECONDS);
+    
+    // DYNAMICALLY FIND THE CORRECT PAGE URL
+    $base_url = site_url('/super-star-chore-chart/'); // Fallback
+    $pages = get_pages();
+    foreach ( $pages as $p ) {
+        if ( has_shortcode( $p->post_content, 'chore_chart' ) ) {
+            $base_url = get_permalink( $p->ID );
+            break;
+        }
+    }
+    
+    // Ensure the URL is properly formatted for the query string
+    $separator = strpos($base_url, '?') !== false ? '&' : '?';
+    $url = $base_url . $separator . 'magic=' . $token;
+    
+    wp_send_json_success(['url' => $url]);
+}
+
 // ── Authentication Check ──────────────────────────────────────────────────────
 function sscc_check_auth() {
     if ( ! check_ajax_referer( 'sscc_nonce', 'nonce', false ) ) {
@@ -28,7 +56,9 @@ $sscc_actions = [
     'sscc_get_state',     'sscc_save_chart',      'sscc_save_defaults',
     'sscc_archive_week',  'sscc_get_archives',    'sscc_poll',
     'sscc_add_kid',       'sscc_remove_kid',      'sscc_rename_kid',
-	'sscc_manifest',
+    'sscc_manifest',      'sscc_get_magic_link',
+    'sscc_change_family_password', 'sscc_forgot_password',
+    'sscc_save_new_password'
 ];
 foreach ( $sscc_actions as $action ) {
     add_action( "wp_ajax_{$action}", "sscc_ajax_{$action}" );
@@ -213,15 +243,13 @@ function sscc_ajax_sscc_rename_kid() {
 function sscc_ajax_sscc_manifest() {
     header( 'Content-Type: application/manifest+json' );
     
-    // Find the URL of the page containing the shortcode to use as the launch URL
     $page = get_page_by_path('chore-chart');
-    // Find the original start_url calculation and replace it with:
-    $start_url = site_url('?sscc_view=app'); // Directly loads the isolated app
+    $start_url = site_url('?sscc_view=app'); 
 
     echo wp_json_encode([
         "name"             => "Super Star Chore Chart",
         "short_name"       => "Chores",
-        "display"          => "standalone", // Hides the browser UI completely
+        "display"          => "standalone",
         "start_url"        => $start_url,
         "background_color" => "#111111",
         "theme_color"      => "#111111",
@@ -241,4 +269,91 @@ function sscc_ajax_sscc_manifest() {
         ]
     ]);
     exit;
+}
+
+// ── Change Family Password ─────────────────────────────────────────────────
+function sscc_ajax_sscc_change_family_password() {
+    global $wpdb;
+    $ctx = sscc_check_family_auth();
+    $fid = $ctx['family']['id'];
+    
+    $new_pass = sanitize_text_field( wp_unslash( $_POST['new_password'] ?? '' ) );
+    if ( strlen($new_pass) < 4 ) {
+        wp_send_json_error([ 'message' => 'Password must be at least 4 characters.' ]);
+    }
+    
+    $wpdb->update( 
+        "{$wpdb->prefix}sscc_families", 
+        [ 'pass_hash' => wp_hash_password($new_pass) ], 
+        [ 'id' => $fid ], 
+        [ '%s' ], [ '%d' ] 
+    );
+    
+    wp_send_json_success();
+}
+
+// ── Forgot Password (User Reset) ───────────────────────────────────────────
+function sscc_ajax_sscc_forgot_password() {
+    global $wpdb;
+    $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+    
+    if ( ! is_email($email) ) wp_send_json_error([ 'message' => 'Invalid email address.' ]);
+    
+    $user = $wpdb->get_row( $wpdb->prepare("SELECT id FROM {$wpdb->prefix}sscc_users WHERE email = %s", $email) );
+    
+    if ( $user ) {
+        // IMPORTANT: Ensure reset_token column exists in DB automatically
+        $col = $wpdb->get_results("SHOW COLUMNS FROM {$wpdb->prefix}sscc_users LIKE 'reset_token'");
+        if (empty($col)) {
+            $wpdb->query("ALTER TABLE {$wpdb->prefix}sscc_users ADD reset_token VARCHAR(64) NULL DEFAULT NULL");
+        }
+        
+        // Generate a reset token
+        $token = wp_generate_password(30, false);
+        $wpdb->update("{$wpdb->prefix}sscc_users", ['reset_token' => $token], ['id' => $user->id]);
+        
+        // DYNAMICALLY FIND THE CORRECT PAGE URL
+        $base_url = site_url('/super-star-chore-chart/'); // Fallback
+        $pages = get_pages();
+        foreach ( $pages as $p ) {
+            if ( has_shortcode( $p->post_content, 'chore_chart' ) ) {
+                $base_url = get_permalink( $p->ID );
+                break;
+            }
+        }
+        
+        // Ensure the URL is properly formatted for the query string
+        $separator = strpos($base_url, '?') !== false ? '&' : '?';
+        $reset_link = $base_url . $separator . 'reset=' . $token;
+        
+        // Send Email
+        $subject = "Chore Chart Password Reset";
+        $message = "You requested a password reset for your Chore Chart account.\n\nClick here to securely access your account and set a new password:\n" . $reset_link;
+        wp_mail($email, $subject, $message);
+    }
+    
+    // Always return success to prevent email guessing
+    wp_send_json_success();
+}
+
+// ── Save New Password (From Reset Link) ────────────────────────────────
+function sscc_ajax_sscc_save_new_password() {
+    global $wpdb;
+    $token = sanitize_text_field( wp_unslash( $_POST['token'] ?? '' ) );
+    $pass  = sanitize_text_field( wp_unslash( $_POST['password'] ?? '' ) );
+    
+    if (strlen($pass) < 6) wp_send_json_error(['message' => 'Password must be at least 6 characters.']);
+    
+    $user = $wpdb->get_row($wpdb->prepare("SELECT id FROM {$wpdb->prefix}sscc_users WHERE reset_token = %s", $token));
+    if (!$user) wp_send_json_error(['message' => 'Invalid or expired token. Please request a new password reset.']);
+    
+    $wpdb->update("{$wpdb->prefix}sscc_users", [
+        'pass_hash' => wp_hash_password($pass),
+        'reset_token' => null
+    ], ['id' => $user->id]);
+    
+    // Auto log them in with the new password
+    setcookie('sscc_user_auth', $user->id, time() + (86400 * 30), COOKIEPATH, COOKIE_DOMAIN);
+    
+    wp_send_json_success();
 }

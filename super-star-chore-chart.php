@@ -3,7 +3,7 @@
  * Plugin Name: Super Star Chore Chart
  * Plugin URI:  https://yourwebsite.com/chore-chart
  * Description: Family chore chart with isolated App User accounts (Email Login) and Multi-Tenant Families.
- * Version:     2.3.0
+ * Version:     2.4.1
  * Author:      Quentin Russell
  * License:     GPL v2 or later
  */
@@ -11,12 +11,11 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // 1. DEFINE CONSTANTS
-define( 'SSCC_VERSION',    '2.3.0' );
+define( 'SSCC_VERSION',    '2.4.1' );
 define( 'SSCC_DIR',        plugin_dir_path( __FILE__ ) );
 define( 'SSCC_URL',        plugin_dir_url( __FILE__ ) );
 
 // 2. REQUIRE FILES IN THE CORRECT ORDER
-// db.php MUST be loaded first to define authentication functions
 require_once SSCC_DIR . 'includes/db.php';
 require_once SSCC_DIR . 'includes/login.php';
 require_once SSCC_DIR . 'includes/ajax.php';
@@ -31,10 +30,7 @@ function sscc_enqueue_assets() {
 
     $opts = get_option( 'sscc_settings', [] );
 
-    // Auth Check: Manually verify the custom cookie
     $is_app_logged_in = isset($_COOKIE['sscc_user_auth']);
-    
-    // Ensure the function exists before calling it
     $user_data = ($is_app_logged_in && function_exists('sscc_get_auth_user')) ? sscc_get_auth_user() : null;
     $family_data = $user_data ? sscc_get_user_family($user_data['id']) : null;
 
@@ -49,7 +45,7 @@ function sscc_enqueue_assets() {
         'family'       => $family_data,
         'pollInterval' => intval( $opts['poll_interval'] ?? 15 ) * 1000,
         'version'      => SSCC_VERSION,
-        'pluginUrl'    => SSCC_URL, // <--- THIS RESTORES THE PRINT STYLES
+        'pluginUrl'    => SSCC_URL, 
     ] );
 }
 
@@ -57,7 +53,7 @@ function sscc_enqueue_assets() {
 register_activation_hook( __FILE__, 'sscc_activate' );
 function sscc_activate() {
     sscc_create_tables();
-    sscc_create_magic_token_table();
+    // Intentionally removed sscc_create_magic_token_table() because we use Transients now.
 
     if ( ! get_option( 'sscc_settings' ) ) {
         add_option( 'sscc_settings', [ 'poll_interval' => 15 ] );
@@ -87,11 +83,11 @@ add_filter( 'template_include', function( $tpl ) {
     }
     return $tpl;
 } );
+
 // ── Mobile Web App (PWA) Meta Tags ──────────────────────────────────────────
 add_action( 'wp_head', 'sscc_mobile_web_app_meta' );
 function sscc_mobile_web_app_meta() {
     global $post;
-    // Only inject on the chore chart page
     if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'chore_chart' ) ) return;
     
     $manifest_url = admin_url( 'admin-ajax.php?action=sscc_manifest' );
@@ -108,18 +104,31 @@ function sscc_mobile_web_app_meta() {
     <link rel="manifest" href="<?php echo esc_url($manifest_url); ?>">
     <?php
 }
+
 // ── Pure App iFrame Endpoint ────────────────────────────────────────────────
 add_action( 'template_redirect', 'sscc_render_iframe_view' );
 function sscc_render_iframe_view() {
-    // If the URL does not have ?sscc_view=app, let WordPress load normally
     if ( ! isset($_GET['sscc_view']) || $_GET['sscc_view'] !== 'app' ) return;
+
+    if ( isset($_GET['reset']) ) {
+        $base_url = site_url('/super-star-chore-chart/');
+        $pages = get_pages();
+        foreach ( $pages as $p ) {
+            if ( has_shortcode( $p->post_content, 'chore_chart' ) ) {
+                $base_url = get_permalink( $p->ID );
+                break;
+            }
+        }
+        $separator = strpos($base_url, '?') !== false ? '&' : '?';
+        wp_redirect( $base_url . $separator . 'reset=' . sanitize_text_field($_GET['reset']) );
+        exit;
+    }
 
     $opts = get_option( 'sscc_settings', [] );
     $is_app_logged_in = isset($_COOKIE['sscc_user_auth']);
     $user_data = ($is_app_logged_in && function_exists('sscc_get_auth_user')) ? sscc_get_auth_user() : null;
     $family_data = $user_data && function_exists('sscc_get_user_family') ? sscc_get_user_family($user_data['id']) : null;
 
-    // Output pure, isolated HTML
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -150,10 +159,55 @@ function sscc_render_iframe_view() {
         </script>
         <script src="<?php echo esc_url(SSCC_URL . 'assets/app.js?ver=' . SSCC_VERSION); ?>" defer></script>
     </head>
-    <body style="margin: 0; padding: 0; background: #111; overflow-x: hidden;">
+    <body style="margin: 0; padding: 0; background: var(--bg-color, #111); overflow-x: hidden;">
         <div id="sscc-app"></div>
     </body>
     </html>
     <?php
-    exit; // Stop WordPress from loading the rest of the site
+    exit; 
+}
+
+// ── URL Interceptor for Magic Links (Using Transients) ───────────────────────
+add_action('init', 'sscc_process_magic_links');
+function sscc_process_magic_links() {
+    global $wpdb;
+
+    if ( isset($_GET['magic']) ) {
+        $token = sanitize_text_field($_GET['magic']);
+        // Lookup the family ID using the transient
+        $fid = get_transient('sscc_magic_' . $token);
+        
+        if ($fid) {
+            // If they don't have an account, create a quick Guest account automatically
+            if (!isset($_COOKIE['sscc_user_auth'])) {
+                $guest_email = 'guest_' . uniqid() . '@chorechart.local';
+                $wpdb->insert("{$wpdb->prefix}sscc_users", ['email' => $guest_email, 'pass_hash' => wp_hash_password('guest')]);
+                $user_id = $wpdb->insert_id;
+                setcookie('sscc_user_auth', $user_id, time() + (86400 * 30), COOKIEPATH, COOKIE_DOMAIN);
+            } else {
+                $user_id = intval($_COOKIE['sscc_user_auth']);
+            }
+            
+            // Add them to the family if not already in it
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}sscc_members WHERE user_id = %d AND family_id = %d", $user_id, $fid));
+            if (!$exists) {
+                $wpdb->insert("{$wpdb->prefix}sscc_members", ['family_id' => $fid, 'user_id' => $user_id, 'role' => 'member']);
+            }
+            
+            // Delete the transient so it can't be used again
+            delete_transient('sscc_magic_' . $token);
+        }
+        
+        // Redirect them back to the Main Divi page so they stay in the nice wrapper
+        $base_url = site_url('/super-star-chore-chart/');
+        $pages = get_pages();
+        foreach ( $pages as $p ) {
+            if ( has_shortcode( $p->post_content, 'chore_chart' ) ) {
+                $base_url = get_permalink( $p->ID );
+                break;
+            }
+        }
+        wp_redirect($base_url);
+        exit;
+    }
 }
