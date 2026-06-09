@@ -92,3 +92,24 @@ super-star-chore-chart/
 │   └── shortcode.php           # Renders the Login/App UI
 └── admin/                      
     └── settings.php            # WP Admin dashboard settings
+```
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are always welcome!
+
+    Fork the repository
+
+    Create your feature branch (git checkout -b feature/AmazingFeature)
+
+    Commit your changes (git commit -m 'Add some AmazingFeature')
+
+    Push to the branch (git push origin feature/AmazingFeature)
+
+    Open a Pull Request
+
+## 📝 License
+
+This project is open source and available under the GPLv2 or later License.
+## ❤️ Credits
+
+Created by Quentin to help families build responsibility, independence, and teamwork through a fun, structured, and modern chore system.
