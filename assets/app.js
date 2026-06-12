@@ -337,10 +337,18 @@ initTheme();
     
     let taskNameCell = '';
     if (state.editMode) {
+        const tasksLen = state.kids[state.activeKidIdx].categories[ci].tasks.length;
+        // Move controls for ALL tasks in edit mode
+        const moveControls = `
+          <span class="sscc-move-task-up" data-ci="${ci}" data-ti="${ti}" style="cursor:${ti === 0 ? 'default' : 'pointer'}; opacity:${ti === 0 ? '0.3' : '1'}; margin-right:2px;" title="Move Up">⬆️</span>
+          <span class="sscc-move-task-down" data-ci="${ci}" data-ti="${ti}" style="cursor:${ti === tasksLen - 1 ? 'default' : 'pointer'}; opacity:${ti === tasksLen - 1 ? '0.3' : '1'}; margin-right:8px;" title="Move Down">⬇️</span>
+        `;
+
         if (isShared) {
             // Locked Shared Task (Visually distinct in Edit Mode)
             taskNameCell = `
               <span title="Shared Task (Edit in Settings)">🔒</span>
+              ${moveControls}
               ${paid ? `<span class="sscc-paid-dot">$</span>` : ''}
               <span style="opacity:0.7;">${esc(task.name)}</span>
               ${paid && task.unit === 'flat' ? ` <em class="sscc-flat" style="opacity:0.7;">- $${Number(task.amount).toFixed(2)}/flat</em>` : ''}
@@ -349,7 +357,8 @@ initTheme();
         } else {
             // Fully Editable Personal Task
             taskNameCell = `
-              <span class="sscc-rm-task" data-ci="${ci}" data-ti="${ti}">✕</span>
+              <span class="sscc-rm-task" data-ci="${ci}" data-ti="${ti}" style="cursor:pointer; color:#e11d48; margin-right:4px;" title="Remove Task">✕</span>
+              ${moveControls}
               <input class="sscc-task-input" type="text" data-ci="${ci}" data-ti="${ti}" value="${esc(task.name)}" maxlength="80">
               <label class="sscc-paid-toggle">
                 <input type="checkbox" class="sscc-task-paid" data-ci="${ci}" data-ti="${ti}" ${task.isPaid?'checked':''}>
@@ -530,6 +539,29 @@ initTheme();
         scheduleSave(); renderChart();
       };
     });
+	
+	// Move Tasks Up/Down
+    app().querySelectorAll('.sscc-move-task-up').forEach(btn => {
+      btn.onclick = () => {
+        const ci = parseInt(btn.dataset.ci), ti = parseInt(btn.dataset.ti);
+        if (ti > 0) {
+          const tasks = state.kids[state.activeKidIdx].categories[ci].tasks;
+          [tasks[ti - 1], tasks[ti]] = [tasks[ti], tasks[ti - 1]]; // Swap array items
+          scheduleSave(); renderChart();
+        }
+      };
+    });
+
+    app().querySelectorAll('.sscc-move-task-down').forEach(btn => {
+      btn.onclick = () => {
+        const ci = parseInt(btn.dataset.ci), ti = parseInt(btn.dataset.ti);
+        const tasks = state.kids[state.activeKidIdx].categories[ci].tasks;
+        if (ti < tasks.length - 1) {
+          [tasks[ti + 1], tasks[ti]] = [tasks[ti], tasks[ti + 1]]; // Swap array items
+          scheduleSave(); renderChart();
+        }
+      };
+    });
 
     // Add Personal Task
     app().querySelectorAll('.sscc-add-task').forEach(btn => {
@@ -679,8 +711,10 @@ initTheme();
               <label style="font-weight:bold; display:block; margin-bottom:8px;">Change Family Password:</label>
               <input type="text" id="new-fam-pass" placeholder="Leave blank to keep current password" style="width:100%; padding:10px; border:1px solid var(--border-color, #ccc); border-radius:4px;">
             </div>
-            <h3 style="margin-bottom:10px; font-size:16px;">Global Task Template:</h3>
-            <p style="margin-bottom:15px; font-size:14px; opacity:0.8;">These Shared Tasks will apply to ALL kids when you hit "Archive & New Week".</p>
+            <h3 style="margin-bottom:10px; font-size:16px;">Global Task Template (All Kids):</h3>
+            <p style="margin-bottom:15px; font-size:14px; font-weight: bold; color: #d97706;">
+              ⚠️ Saving changes here will instantly update the live chart for ALL kids. Existing checkmarks will be kept.
+            </p>
             
             <div id="def-cats">
               ${defs.map((cat, ci) => `
@@ -692,7 +726,9 @@ initTheme();
                   </div>
                   ${(cat.tasks || []).map((t, ti) => `
                     <div class="sscc-def-task" data-ci="${ci}" data-ti="${ti}" style="display:flex; gap:10px; margin-bottom:5px; align-items:center; padding-left:20px;">
-                      <button class="sscc-rm-deftask sscc-btn-sm" data-ci="${ci}" data-ti="${ti}">✕</button>
+                      <button class="sscc-rm-deftask sscc-btn-sm" data-ci="${ci}" data-ti="${ti}" style="padding: 2px 6px;" title="Remove">✕</button>
+					  <button class="sscc-move-deftask-up sscc-btn-sm" data-ci="${ci}" data-ti="${ti}" style="padding: 2px 6px;" title="Move Up" ${ti === 0 ? 'disabled' : ''}>⬆️</button>
+					  <button class="sscc-move-deftask-down sscc-btn-sm" data-ci="${ci}" data-ti="${ti}" style="padding: 2px 6px;" title="Move Down" ${ti === cat.tasks.length - 1 ? 'disabled' : ''}>⬇️</button>
                       <input class="sscc-def-taskname" type="text" data-ci="${ci}" data-ti="${ti}" value="${esc(t.name)}" maxlength="80" style="flex:1; padding:5px;">
                       <label style="white-space:nowrap;"><input type="checkbox" class="sscc-def-taskpaid" data-ci="${ci}" data-ti="${ti}" ${t.isPaid ? 'checked' : ''}> $</label>
                       <input class="sscc-def-amount" type="number" step="0.01" min="0" data-ci="${ci}" data-ti="${ti}" value="${t.amount || 0}" style="width:60px; padding:5px;">
@@ -725,6 +761,27 @@ initTheme();
           overlay.querySelectorAll('.sscc-rm-deftask').forEach(btn => {
               btn.onclick = () => { collect(); defs[btn.dataset.ci].tasks.splice(btn.dataset.ti, 1); renderModal(); };
           });
+		  overlay.querySelectorAll('.sscc-move-deftask-up').forEach(btn => {
+              btn.onclick = () => { 
+                  collect(); 
+                  const ci = parseInt(btn.dataset.ci), ti = parseInt(btn.dataset.ti); 
+                  if (ti > 0) { 
+                      [defs[ci].tasks[ti - 1], defs[ci].tasks[ti]] = [defs[ci].tasks[ti], defs[ci].tasks[ti - 1]]; 
+                      renderModal(); 
+                  } 
+              };
+          });
+
+          overlay.querySelectorAll('.sscc-move-deftask-down').forEach(btn => {
+              btn.onclick = () => { 
+                  collect(); 
+                  const ci = parseInt(btn.dataset.ci), ti = parseInt(btn.dataset.ti); 
+                  if (ti < defs[ci].tasks.length - 1) { 
+                      [defs[ci].tasks[ti + 1], defs[ci].tasks[ti]] = [defs[ci].tasks[ti], defs[ci].tasks[ti + 1]]; 
+                      renderModal(); 
+                  } 
+              };
+          });
 
           overlay.querySelectorAll('.sscc-rm-defcat').forEach(btn => {
               btn.onclick = () => { collect(); defs.splice(btn.dataset.ci, 1); renderModal(); };
@@ -748,9 +805,9 @@ initTheme();
               }
 
               Promise.all(savePromises).then(() => { 
-                  state.defaults = defs; 
-                  showMsg('Settings Saved Successfully!'); 
+                  showMsg('Global Settings Applied to Live Chart!'); 
                   overlay.remove(); 
+                  silentReload(); // <--- ADD THIS LINE to instantly refresh the UI
               }).catch(e => showModalMsg(e.message, true));
           };
       }

@@ -139,10 +139,69 @@ function sscc_ajax_sscc_save_chart() {
 
 function sscc_ajax_sscc_save_defaults() {
     $ctx  = sscc_check_family_auth();
+    $fid  = $ctx['family']['id'];
+    $uid  = $ctx['uid'];
     $raw  = wp_unslash( $_POST['defaults'] ?? '' );
     $defs = json_decode( $raw, true );
+    
     if ( ! is_array( $defs ) ) wp_send_json_error( [ 'message' => 'Invalid data.' ] );
-    sscc_set_chart_data( $ctx['family']['id'], 'defaults', $defs, $ctx['uid'] );
+    
+    // 1. Save the new defaults
+    sscc_set_chart_data( $fid, 'defaults', $defs, $uid );
+
+    // 2. LIVE MERGE: Update the current kids chart immediately
+    $kids_row = sscc_get_chart_data( $fid, 'kids' );
+    if ( $kids_row && !empty($kids_row['data']) ) {
+        $kids = $kids_row['data'];
+
+        foreach ( $kids as &$kid ) {
+            // A. Map existing shared tasks by ID so we don't lose checkmarks mid-week
+            $existing_shared_checks = [];
+            foreach ( $kid['categories'] as $old_cat ) {
+                foreach ( $old_cat['tasks'] as $old_task ) {
+                    if ( isset($old_task['scope']) && $old_task['scope'] === 'shared' && isset($old_task['id']) ) {
+                        $existing_shared_checks[$old_task['id']] = $old_task['checks'] ?? sscc_empty_checks();
+                    }
+                }
+            }
+
+            // B. Clone the fresh defaults for this kid
+            $new_categories = sscc_clone_defaults( $defs );
+
+            // C. Restore checkmarks for the shared tasks if they already existed
+            foreach ( $new_categories as &$new_cat ) {
+                foreach ( $new_cat['tasks'] as &$new_task ) {
+                    if ( isset($existing_shared_checks[$new_task['id']]) ) {
+                        $new_task['checks'] = $existing_shared_checks[$new_task['id']];
+                    }
+                }
+            }
+
+            // D. Re-inject Personal Tasks from the kid's old categories
+            $cat_map = [];
+            foreach ( $new_categories as $idx => $cat ) {
+                if ( isset($cat['id']) ) $cat_map[$cat['id']] = $idx;
+            }
+
+            foreach ( $kid['categories'] as $old_cat ) {
+                if ( !isset($old_cat['id']) || !isset($cat_map[$old_cat['id']]) ) continue;
+                
+                $target_idx = $cat_map[$old_cat['id']];
+                foreach ( $old_cat['tasks'] as $task ) {
+                    if ( isset($task['scope']) && $task['scope'] === 'personal' ) {
+                        $new_categories[$target_idx]['tasks'][] = $task;
+                    }
+                }
+            }
+
+            // E. Apply the newly merged categories back to the kid
+            $kid['categories'] = $new_categories;
+        }
+
+        // 3. Save the updated kids array back to the live chart
+        sscc_set_chart_data( $fid, 'kids', $kids, $uid );
+    }
+
     wp_send_json_success( [] );
 }
 
