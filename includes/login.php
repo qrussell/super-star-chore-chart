@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 function sscc_user_register() {
     global $wpdb;
+
     $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
     $pass  = wp_unslash( $_POST['password'] ?? '' );
     
@@ -18,25 +19,29 @@ function sscc_user_register() {
         wp_send_json_error( [ 'message' => 'Email already registered. Please log in.' ] );
     }
     
-    $wpdb->insert( "{$wpdb->prefix}sscc_users", [
+    $inserted = $wpdb->insert( "{$wpdb->prefix}sscc_users", [
         'email'     => $email,
         'pass_hash' => wp_hash_password( $pass ),
     ], [ '%s', '%s' ] );
     
+    if ( ! $inserted ) {
+        wp_send_json_error( [ 'message' => 'Failed to create account. Please try again.' ] );
+    }
+    
     $uid = $wpdb->insert_id;
     
-    // Issue Custom User Cookie
-    $hash = md5($uid . $email . NONCE_SALT);
-    // In both sscc_user_register() and sscc_user_login() functions:
-	setcookie(
-		'sscc_user_auth', 
-		base64_encode($uid . '|' . $hash), 
-		time() + (30 * DAY_IN_SECONDS), 
-		COOKIEPATH, 
-		COOKIE_DOMAIN, 
-		is_ssl(), // Set to true if your site uses HTTPS
-		true      // HttpOnly = true is safer
-	);
+    // Issue Custom User Cookie with stronger hash
+    $hash = hash_hmac('sha256', $uid . '|' . $email, NONCE_SALT);
+    
+    setcookie(
+        'sscc_user_auth', 
+        base64_encode($uid . '|' . $hash), 
+        time() + (30 * DAY_IN_SECONDS), 
+        COOKIEPATH, 
+        COOKIE_DOMAIN, 
+        is_ssl(), 
+        true      // HttpOnly = true is safer
+    );
     
     wp_send_json_success();
 }
@@ -48,6 +53,7 @@ add_action('wp_ajax_sscc_user_register', 'sscc_user_register');
  */
 function sscc_user_login() {
     global $wpdb;
+    
     $email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
     $pass  = wp_unslash( $_POST['password'] ?? '' );
     
@@ -57,9 +63,18 @@ function sscc_user_login() {
         wp_send_json_error( [ 'message' => 'Invalid email or password.' ] );
     }
     
-    // Issue Custom User Cookie
-    $hash = md5($user->id . $user->email . NONCE_SALT);
-    setcookie('sscc_user_auth', base64_encode($user->id . '|' . $hash), time() + (30 * DAY_IN_SECONDS), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
+    // Issue Custom User Cookie with stronger hash
+    $hash = hash_hmac('sha256', $user->id . '|' . $user->email, NONCE_SALT);
+    
+    setcookie(
+        'sscc_user_auth', 
+        base64_encode($user->id . '|' . $hash), 
+        time() + (30 * DAY_IN_SECONDS), 
+        COOKIEPATH, 
+        COOKIE_DOMAIN, 
+        is_ssl(), 
+        true
+    );
     
     wp_send_json_success();
 }
@@ -70,7 +85,8 @@ add_action('wp_ajax_sscc_user_login', 'sscc_user_login');
  * Handle Custom Logout
  */
 function sscc_user_logout() {
-    setcookie('sscc_user_auth', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
+    // Set the value to an empty string and expire it in the past
+    setcookie('sscc_user_auth', '', time() - YEAR_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
     wp_send_json_success();
 }
 add_action('wp_ajax_nopriv_sscc_user_logout', 'sscc_user_logout');

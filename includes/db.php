@@ -10,7 +10,7 @@ function sscc_get_auth_user() {
     if ( count( $parts ) !== 2 ) return null;
     
     $uid  = intval($parts[0]);
-    $hash = $parts[1]; // This is the MD5 hash we created in login.php
+    $hash = $parts[1]; // This is the SHA256 hash we created in login.php
     
     global $wpdb;
     $user = $wpdb->get_row( $wpdb->prepare(
@@ -20,8 +20,8 @@ function sscc_get_auth_user() {
     
     if ( ! $user ) return null;
     
-    // Verify the hash stored in the cookie matches the one generated at login
-    $expected_hash = md5($user['id'] . $user['email'] . NONCE_SALT);
+    // Verify the hash stored in the cookie matches the new SHA256 format generated at login
+    $expected_hash = hash_hmac('sha256', $user['id'] . '|' . $user['email'], NONCE_SALT);
     
     if ( hash_equals($expected_hash, $hash) ) {
         return $user;

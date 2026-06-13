@@ -563,3 +563,21 @@ body {
   .sscc-earnings { border-top: 2px solid #000; font-size: 16px !important; margin-top: 15px; padding-top: 10px; }
   @page { size: letter portrait; margin: 0.5in; }
 }
+
+/* --- UI Fixes for Light Mode --- */
+
+/* Fix invisible text on main buttons (Create Family / Join Family) */
+.sscc-btn {
+    color: #1f2937 !important; /* Dark gray/black text */
+    background-color: #f3f4f6 !important; /* Light gray background */
+    border: 1px solid #d1d5db !important; /* Subtle border */
+}
+
+.sscc-btn:hover {
+    background-color: #e5e7eb !important;
+}
+
+/* Fix invisible text on the toggle tabs */
+.sscc-tab {
+    color: #1f2937 !important; 
+}

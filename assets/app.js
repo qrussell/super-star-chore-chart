@@ -57,7 +57,8 @@ initTheme();
   function post(action, data) {
     const fd = new FormData();
     fd.append('action', action);
-    fd.append('nonce',  NONCE);
+    fd.append('nonce',  NONCE); // Kept for any legacy endpoints
+    fd.append('security', NONCE); // Added for the new secure authentication endpoints
     for (const [k, v] of Object.entries(data || {})) fd.append(k, v);
     return fetch(AJAX, { method: 'POST', body: fd })
       .then(r => r.json())

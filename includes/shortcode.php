@@ -42,7 +42,7 @@ function sscc_render_shortcode() {
                     <label style="display:block; margin-bottom:20px; font-weight:600; font-size:13px;">Password
                         <input type="password" id="ssc-password" placeholder="Min 6 characters" style="width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:5px;" />
                     </label>
-                    
+                    <input type="hidden" id="sscc_security_nonce" value="<?php echo wp_create_nonce('sscc_auth_nonce'); ?>">
                     <div style="display:flex; gap:10px;">
                         <button id="ssc-login-btn" class="sscc-btn" style="flex:1; cursor:pointer;">Log In</button>
                         <button id="ssc-register-btn" class="sscc-btn sscc-btn-outline" style="flex:1; cursor:pointer;">Create Account</button>
@@ -91,7 +91,7 @@ function sscc_render_shortcode() {
                                 var res = JSON.parse(xhr.responseText);
                                 if(res.success) { 
                                     // Strip the token from URL and reload main page to log them into the app
-                                    window.location.href = window.location.pathname;
+                                    window.location.href = window.location.pathname + '?nocache=' + new Date().getTime();
                                 } else { 
                                     document.getElementById('ssc-reset-msg').textContent = res.data.message; 
                                 }
@@ -113,7 +113,10 @@ function sscc_render_shortcode() {
                     xhr.onload = function() {
                         try {
                             var res = JSON.parse(xhr.responseText);
-                            if(res.success) { window.location.reload(); }
+                            if(res.success) { 
+                                // Cache-Busting Redirect
+                                window.location.href = window.location.pathname + '?nocache=' + new Date().getTime(); 
+                            }
                             else { 
                                 document.getElementById('ssc-auth-msg').style.color = '#dc2626';
                                 document.getElementById('ssc-auth-msg').textContent = res.data.message; 
@@ -165,7 +168,10 @@ function sscc_render_shortcode() {
                     var xhr = new XMLHttpRequest();
                     xhr.open('POST', ajaxUrl, true);
                     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-                    xhr.onload = function() { window.location.reload(); };
+                    xhr.onload = function() { 
+                        // Cache-Busting Redirect for Logout
+                        window.location.href = window.location.pathname + '?nocache=' + new Date().getTime(); 
+                    };
                     xhr.send('action=sscc_user_logout');
                 };
             }
