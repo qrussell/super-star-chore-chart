@@ -131,7 +131,7 @@ function sscc_render_iframe_view() {
 
     ?>
     <!DOCTYPE html>
-    <html lang="en">
+    <html data-theme="light" lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
@@ -144,23 +144,33 @@ function sscc_render_iframe_view() {
         <link rel="apple-touch-icon" href="<?php echo esc_url(SSCC_URL . 'assets/icon.png'); ?>">
         
         <link rel="stylesheet" href="<?php echo esc_url(SSCC_URL . 'assets/app.css?ver=' . SSCC_VERSION); ?>">
-        
-        <script>
-            var SSCC = <?php echo wp_json_encode([
-                'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-                'nonce'        => wp_create_nonce( 'sscc_nonce' ),
-                'loggedIn'     => $is_app_logged_in,
-                'user'         => $user_data,
-                'family'       => $family_data,
-                'pollInterval' => intval( $opts['poll_interval'] ?? 15 ) * 1000,
-                'version'      => SSCC_VERSION,
-                'pluginUrl'    => SSCC_URL
-            ]); ?>;
-        </script>
-        <script src="<?php echo esc_url(SSCC_URL . 'assets/app.js?ver=' . SSCC_VERSION); ?>" defer></script>
+        <style>
+            /* Force light mode background for the standalone app */
+            body { margin: 0; padding: 0; background: #f8fafc; font-family: sans-serif; }
+            .sscc-pwa-wrapper { max-width: 100%; height: 100vh; overflow-y: auto; }
+        </style>
     </head>
-    <body style="margin: 0; padding: 0; background: var(--bg-color, #111); overflow-x: hidden;">
-        <div id="sscc-app"></div>
+    <body>
+        <div class="sscc-pwa-wrapper">
+            <?php if (!$is_app_logged_in || empty($user_data)): ?>
+                <?php echo do_shortcode('[chore_chart]'); ?>
+            <?php else: ?>
+                <div id="sscc-app"></div>
+                <script>
+                    var SSCC = <?php echo wp_json_encode([
+                        'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+                        'nonce'        => wp_create_nonce( 'sscc_nonce' ),
+                        'loggedIn'     => true,
+                        'user'         => $user_data,
+                        'family'       => $family_data,
+                        'pollInterval' => intval( $opts['poll_interval'] ?? 15 ) * 1000,
+                        'version'      => SSCC_VERSION,
+                        'pluginUrl'    => SSCC_URL
+                    ]); ?>;
+                </script>
+                <script src="<?php echo esc_url(SSCC_URL . 'assets/app.js?ver=' . SSCC_VERSION); ?>" defer></script>
+            <?php endif; ?>
+        </div>
     </body>
     </html>
     <?php
