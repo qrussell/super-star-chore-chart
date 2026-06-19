@@ -1,6 +1,23 @@
 /* Super Star Chore Chart – Stylesheet v2.5.0
    Fully responsive Light/Dark Mode + Print-ready UI
 */
+/* ── Color Variables (Light & Dark Mode) ───────────────────── */
+:root {
+    --bg-color: #f8fafc;
+    --text-color: #1f2937;
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+}
+
+/* Auto-detect device's Dark Mode preference */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg-color: #0f172a;
+        --text-color: #f1f5f9;
+        --card-bg: #1e293b;
+        --border-color: #334155;
+    }
+}
 
 :root {
     /* Light Mode Variables */
@@ -580,4 +597,43 @@ body {
 /* Fix invisible text on the toggle tabs */
 .sscc-tab {
     color: #1f2937 !important; 
+}
+
+/* ── Mobile Sticky Columns for Tasks & Categories ───────────────────── */
+@media (max-width: 768px) {
+    /* 1. The immediate wrapper handles the scroll */
+    .sscc-table-wrapper,
+    .sscc-chart-container { 
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overflow-y: visible !important;
+    }
+
+    /* 2. CRITICAL FOR iOS: Sticky cells fail if border-collapse is "collapse" */
+    .sscc-table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    /* 3. Apply sticky with the Apple-specific -webkit- prefix */
+    .sscc-table th:first-child,
+    .sscc-table td:first-child,
+    .sscc-task-row .sscc-task-name-col {
+        position: -webkit-sticky !important; /* iOS Safari support */
+        position: sticky !important;
+        left: 0;
+        
+        background-color: var(--card-bg, #ffffff) !important; 
+        color: var(--text-color) !important;
+        
+        z-index: 10; 
+        
+        /* Adds a subtle line to replace any borders lost by changing border-collapse */
+        border-right: 1px solid var(--border-color, #e5e7eb) !important;
+    }
+    
+    /* 4. Top-left corner needs the highest z-index */
+    .sscc-table th:first-child {
+        z-index: 11 !important; 
+    }
 }

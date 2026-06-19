@@ -8,12 +8,13 @@ function sscc_render_shortcode() {
     ?>
     <div class="sscc-app-container" style="
         width: 100%; 
-        max-width: fit-content; 
+        max-width: 100%; 
         margin: 40px auto; 
         border-radius: 16px; 
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); 
         background: #ffffff; 
-        overflow: hidden;">
+        overflow-x: auto;
+        overflow-y: clip;">
         
         <div id="ssc-reset-ui" style="display:none; max-width:400px; margin: 40px auto; padding: 30px; border: 1px solid #ddd; border-radius: 10px; background:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.05);">
             <h2 style="text-align:center; margin-top:0;">Set New Password</h2>
@@ -90,8 +91,11 @@ function sscc_render_shortcode() {
                             try {
                                 var res = JSON.parse(xhr.responseText);
                                 if(res.success) { 
-                                    // Strip the token from URL and reload main page to log them into the app
-                                    window.location.href = window.location.pathname + '?nocache=' + new Date().getTime();
+                                    // Strip the token from URL and reload main page, preserving PWA params
+                                    var currentUrl = new URL(window.location.href);
+                                    currentUrl.searchParams.delete('reset');
+                                    currentUrl.searchParams.set('nocache', new Date().getTime());
+                                    window.location.href = currentUrl.toString();
                                 } else { 
                                     document.getElementById('ssc-reset-msg').textContent = res.data.message; 
                                 }
@@ -114,8 +118,10 @@ function sscc_render_shortcode() {
                         try {
                             var res = JSON.parse(xhr.responseText);
                             if(res.success) { 
-                                // Cache-Busting Redirect
-                                window.location.href = window.location.pathname + '?nocache=' + new Date().getTime(); 
+                                // Cache-Busting Redirect (preserves ?sscc_view=app)
+                                var currentUrl = new URL(window.location.href);
+                                currentUrl.searchParams.set('nocache', new Date().getTime());
+                                window.location.href = currentUrl.toString();
                             }
                             else { 
                                 document.getElementById('ssc-auth-msg').style.color = '#dc2626';
@@ -169,8 +175,10 @@ function sscc_render_shortcode() {
                     xhr.open('POST', ajaxUrl, true);
                     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
                     xhr.onload = function() { 
-                        // Cache-Busting Redirect for Logout
-                        window.location.href = window.location.pathname + '?nocache=' + new Date().getTime(); 
+                        // Cache-Busting Redirect for Logout (preserves ?sscc_view=app)
+                        var currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.set('nocache', new Date().getTime());
+                        window.location.href = currentUrl.toString();
                     };
                     xhr.send('action=sscc_user_logout');
                 };

@@ -3,7 +3,7 @@
  * Plugin Name: Super Star Chore Chart
  * Plugin URI:  https://yourwebsite.com/chore-chart
  * Description: Family chore chart with isolated App User accounts (Email Login) and Multi-Tenant Families.
- * Version:     2.4.5
+ * Version:     2.4.7
  * Author:      Quentin Russell
  * License:     GPL v2 or later
  */
@@ -11,7 +11,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // 1. DEFINE CONSTANTS
-define( 'SSCC_VERSION',    '2.4.5' );
+define( 'SSCC_VERSION',    '2.4.7' );
 define( 'SSCC_DIR',        plugin_dir_path( __FILE__ ) );
 define( 'SSCC_URL',        plugin_dir_url( __FILE__ ) );
 
@@ -131,7 +131,7 @@ function sscc_render_iframe_view() {
 
     ?>
     <!DOCTYPE html>
-    <html data-theme="light" lang="en">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
@@ -145,8 +145,8 @@ function sscc_render_iframe_view() {
         
         <link rel="stylesheet" href="<?php echo esc_url(SSCC_URL . 'assets/app.css?ver=' . SSCC_VERSION); ?>">
         <style>
-            /* Force light mode background for the standalone app */
-            body { margin: 0; padding: 0; background: #f8fafc; font-family: sans-serif; }
+            /* Allow Dark Mode auto-switching by referencing variables rather than hardcoded hex colors */
+            body { margin: 0; padding: 0; background: var(--bg-color, #f8fafc); font-family: sans-serif; }
             .sscc-pwa-wrapper { max-width: 100%; height: 100vh; overflow-y: auto; }
         </style>
     </head>
