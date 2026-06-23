@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Super Star Chore Chart
- * Plugin URI:  https://yourwebsite.com/chore-chart
+ * Plugin URI:  https://cielocloud.org/chorechart/
  * Description: Family chore chart with isolated App User accounts (Email Login) and Multi-Tenant Families.
- * Version:     2.4.7
+ * Version:     2.4.8
  * Author:      Quentin Russell
  * License:     GPL v2 or later
  */
@@ -11,7 +11,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // 1. DEFINE CONSTANTS
-define( 'SSCC_VERSION',    '2.4.7' );
+define( 'SSCC_VERSION',    '2.4.8' );
 define( 'SSCC_DIR',        plugin_dir_path( __FILE__ ) );
 define( 'SSCC_URL',        plugin_dir_url( __FILE__ ) );
 
@@ -22,7 +22,22 @@ require_once SSCC_DIR . 'includes/ajax.php';
 require_once SSCC_DIR . 'includes/shortcode.php';
 require_once SSCC_DIR . 'admin/settings.php';
 
-// 3. ASSET ENQUEUEING
+// 3. GITHUB UPDATE CHECKER
+if ( file_exists( SSCC_DIR . 'plugin-update-checker/plugin-update-checker.php' ) ) {
+    require_once SSCC_DIR . 'plugin-update-checker/plugin-update-checker.php';
+    
+    // Initialize the update checker
+    $superStarUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+        'https://github.com/qrussell/super-star-chore-chart/',
+        __FILE__,
+        'super-star-chore-chart'
+    );
+    
+    // Set the branch that contains the stable release.
+    $superStarUpdateChecker->setBranch('main');
+}
+
+// 4. ASSET ENQUEUEING
 add_action( 'wp_enqueue_scripts', 'sscc_enqueue_assets' );
 function sscc_enqueue_assets() {
     global $post;
@@ -49,7 +64,7 @@ function sscc_enqueue_assets() {
     ] );
 }
 
-// 4. ACTIVATION HOOK
+// 5. ACTIVATION HOOK
 register_activation_hook( __FILE__, 'sscc_activate' );
 function sscc_activate() {
     sscc_create_tables();
@@ -70,7 +85,7 @@ function sscc_activate() {
     flush_rewrite_rules();
 }
 
-// 5. TEMPLATES
+// 6. TEMPLATES
 add_filter( 'theme_page_templates', function( $t ) {
     $t['sscc-full-width.php'] = 'Chore Chart – Full Width';
     return $t;
